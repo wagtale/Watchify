@@ -867,7 +867,7 @@ class MainActivity : AppCompatActivity() {
             
             val icon = android.widget.ImageView(this@MainActivity).apply {
                 setImageResource(iconRes)
-                setColorFilter(Color.parseColor("#34C759"))
+                setColorFilter(Color.parseColor("#007AFF"))
                 layoutParams = LinearLayout.LayoutParams(64, 64).apply {
                     setMargins(0, 0, 32, 0)
                 }
@@ -894,7 +894,7 @@ class MainActivity : AppCompatActivity() {
             graphView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 400)
             addView(graphView)
             
-            val syncBtn = createButton("Sync $title", "#1AFFFFFF", "#34C759", iconRes) {
+            val syncBtn = createButton("Sync $title", "#1AFFFFFF", "#007AFF", iconRes) {
                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                     bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, syncOpcode, ByteArray(0)))
                 }
