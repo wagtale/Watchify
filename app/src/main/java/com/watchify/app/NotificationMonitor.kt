@@ -127,11 +127,11 @@ class NotificationMonitor : NotificationListenerService() {
             packageName.contains("skype") -> 10 // Skype
             packageName.contains("linkedin") -> 11 // LinkedIn
             packageName.contains("line") -> 12 // Line
-            else -> 12 // Map ALL OTHER notifications to Line (12)
+            else -> 13 // OTHER — generic notification icon (not LINE)
         }
 
-        val displayTitle = if (appId >= 12) appName else title
-        val displayBody = if (appId >= 12) {
+        val displayTitle = if (appId >= 13) appName else title
+        val displayBody = if (appId >= 13) {
             if (title.isNotEmpty() && title != appName) "$title: $body" else body
         } else {
             body

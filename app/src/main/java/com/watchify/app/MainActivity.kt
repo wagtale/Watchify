@@ -45,17 +45,17 @@ class MainActivity : AppCompatActivity() {
     private val statusUpdater = object : Runnable {
         override fun run() {
             updateConnectionStatus()
-            
+
             if (::bleManager.isInitialized && bleManager.isConnected()) {
                 batteryPollTick++
-                if (batteryPollTick >= 10) { // Every 10 seconds
+                if (batteryPollTick >= 60) { // Every 60 seconds — battery changes slowly, no need to hammer BLE
                     batteryPollTick = 0
                     CoroutineScope(Dispatchers.IO).launch {
                         bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 3, 3, ByteArray(0)))
                     }
                 }
             }
-            
+
             statusHandler.postDelayed(this, 1000)
         }
     }
@@ -102,7 +102,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateConnectionStatus()
-        val filter = android.content.IntentFilter("com.watchify.app.BATTERY_LEVEL")
+        val filter = android.content.IntentFilter("com.watchify.app.BATTERY_LEVEL").apply {
+            addAction("com.watchify.app.HEALTH_DATA_UPDATED")
+            addAction("com.watchify.app.CITY_UPDATED")
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -253,7 +256,9 @@ class MainActivity : AppCompatActivity() {
             if (sleepHistory.isNotEmpty() && ::sleepGraph.isInitialized) {
                 val sleepValues = sleepHistory.map { it.value1 }
                 sleepGraph.setData(sleepValues)
-                sleepValueText.text = "${sleepValues.last()} type"
+                // Map raw sleep type integers to human-readable labels
+                val sleepTypeNames = mapOf(0f to "None", 1f to "Asleep", 2f to "Deep", 3f to "Light", 4f to "Awake")
+                sleepValueText.text = sleepTypeNames[sleepValues.last()] ?: "Unknown"
             }
             
             // SpO2
@@ -727,7 +732,9 @@ class MainActivity : AppCompatActivity() {
         
         val applySwitchesBtn = createButton("Sync Settings to Watch", "#1AFFFFFF", "#007AFF", R.drawable.ic_refresh_cw) {
             CoroutineScope(Dispatchers.IO).launch {
+                // Each switch is a separate standalone packet — do NOT combine into composite sync
                 bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 122, WatchProtocol.buildCallsSwitchPayload(callAlertCb.isChecked)))
+                bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 123, WatchProtocol.buildCallsSwitchPayload(smsAlertCb.isChecked)))
                 bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 124, WatchProtocol.buildAppSwitchPayload(appAlertCb.isChecked)))
                 runOnUiThread { logView.append("\n[+] Notification switches updated & synced!") }
             }
@@ -965,8 +972,7 @@ class MainActivity : AppCompatActivity() {
             windowInsets
         }
 
-        headerGlass.targetView = contentFrame
-        bottomGlass.targetView = contentFrame
+        // Note: GlassView blur is handled by RenderEffect on API 31+; no targetView needed.
 
         var isHeaderHidden = false
         val scrollListener = View.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
@@ -1358,13 +1364,11 @@ class MainActivity : AppCompatActivity() {
     private fun startAutoSync() {
         if (autoSyncJob != null) return
         autoSyncJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-            while (true) {
+            while (true) {  // delay() is a cancellation point — CancellationException thrown on cancel()
                 kotlinx.coroutines.delay(60000)
-                bleManager?.let {
-                    if (it.isConnected()) {
-                        runOnUiThread { logView.append("\n[*] Auto-syncing background data...") }
-                        it.sendChunks(WatchProtocol.buildFastSyncRequests())
-                    }
+                if (::bleManager.isInitialized && bleManager.isConnected()) {
+                    runOnUiThread { logView.append("\n[*] Auto-syncing background data...") }
+                    bleManager.sendChunks(WatchProtocol.buildFastSyncRequests())
                 }
             }
         }

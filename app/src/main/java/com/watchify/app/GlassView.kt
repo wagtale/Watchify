@@ -10,12 +10,6 @@ import android.view.View
 
 class GlassView(context: Context) : View(context) {
 
-    var targetView: View? = null
-        set(value) {
-            field = value
-            invalidate()
-        }
-
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             setRenderEffect(RenderEffect.createBlurEffect(40f, 40f, Shader.TileMode.CLAMP))
@@ -24,18 +18,10 @@ class GlassView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val target = targetView
-        if (target != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val saveCount = canvas.save()
-            val location = IntArray(2)
-            getLocationInWindow(location)
-            val targetLocation = IntArray(2)
-            target.getLocationInWindow(targetLocation)
-            canvas.translate((targetLocation[0] - location[0]).toFloat(), (targetLocation[1] - location[1]).toFloat())
-            target.draw(canvas)
-            canvas.restoreToCount(saveCount)
-        } else {
-            // Fallback for older Android versions
+        // On API 31+ the RenderEffect blur is applied automatically by the hardware renderer;
+        // calling target.draw(canvas) here is redundant and unsafe on HW-accelerated views.
+        // On older APIs we paint a solid dark overlay as a fallback.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             canvas.drawColor(Color.parseColor("#E61C1C1E"))
         }
     }

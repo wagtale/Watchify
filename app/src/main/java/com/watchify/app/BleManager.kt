@@ -15,6 +15,10 @@ import kotlinx.coroutines.sync.withLock
 @SuppressLint("MissingPermission")
 class BleManager(private val context: Context) {
 
+    // Lifecycle-bound coroutine scope — cancelled when disconnect() is called.
+    // SupervisorJob ensures one failed child doesn't cancel siblings.
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     private val logCallbacks = mutableListOf<(String) -> Unit>()
     private var lastConnectedMac: String? = null
     private var userDisconnectRequested = false
@@ -57,7 +61,7 @@ class BleManager(private val context: Context) {
     fun pushMusicMetadata(song: String, vol: Int) {
         currentSong = song
         currentVolume = Math.max(0, Math.min(15, vol))
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             sendChunks(WatchProtocol.buildMasterPacket(0, 1, 113, WatchProtocol.buildMusicTitlePayload(currentSong)))
             sendChunks(WatchProtocol.buildMasterPacket(0, 1, 113, WatchProtocol.buildMusicVolumePayload(currentVolume)))
         }
@@ -83,7 +87,7 @@ class BleManager(private val context: Context) {
 
     private fun scheduleAutoReconnect() {
         autoReconnectJob?.cancel()
-        autoReconnectJob = CoroutineScope(Dispatchers.IO).launch {
+        autoReconnectJob = scope.launch {
             delay(5000)
             if (bluetoothGatt == null && lastConnectedMac != null) {
                 logCallback("[*] Retrying watch connection ($lastConnectedMac)...")
@@ -113,6 +117,8 @@ class BleManager(private val context: Context) {
     fun disconnect() {
         userDisconnectRequested = true
         autoReconnectJob?.cancel()
+        // Cancel all in-flight coroutines (writes, syncs, etc.) tied to this connection
+        scope.coroutineContext.cancelChildren()
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
@@ -166,7 +172,7 @@ class BleManager(private val context: Context) {
                     writeChar = service.getCharacteristic(WRITE_UUID)
                     val notifyChar = service.getCharacteristic(NOTIFY_UUID)
 
-                    CoroutineScope(Dispatchers.IO).launch {
+                    scope.launch {
                         // Enable notifications for primary notify char
                         gatt.setCharacteristicNotification(notifyChar, true)
                         val descriptor = notifyChar.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
@@ -200,12 +206,20 @@ class BleManager(private val context: Context) {
                         val syncPkt = WatchProtocol.buildSyncSettingsPacket(
                             isPairing = true,
                             callsEnabled = true,
-                            smsEnabled = true,
                             appsEnabled = true
                         )
                         sendChunks(syncPkt)
-                        logCallback("[+] Dynamic Settings Sync & Pair Finish Payload Sent!")
-                        
+
+                        // Send SMS switch as a standalone packet (must NOT be in the composite sync)
+                        sendChunks(WatchProtocol.buildMasterPacket(0, 1, 123, WatchProtocol.buildCallsSwitchPayload(true)))
+
+                        // Announce BLE 5.0 support and platform ID so the watch can optimize its connection
+                        val ble50 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O // API 26+ = BLE 5 capable
+                        sendChunks(WatchProtocol.buildBle50SupportPacket(ble50))
+                        sendChunks(WatchProtocol.buildExtPidPacket(8)) // 8 = Universal platform
+
+                        logCallback("[+] Sync & Pair Finish sent. BLE5=${ble50}, PID=Universal.")
+
                         // Auto-sync historical health data
                         logCallback("[>] Requesting historical health data...")
                         sendChunks(WatchProtocol.buildDataSyncRequests())
@@ -313,7 +327,7 @@ class BleManager(private val context: Context) {
 
             // Acknowledge incoming requests
             if (direction == 1 && opcode != 12) {
-                CoroutineScope(Dispatchers.IO).launch {
+                scope.launch {
                     sendChunks(WatchProtocol.buildMasterPacket(seqCounter, 4, opcode, byteArrayOf(1)))
                 }
             }
@@ -396,7 +410,7 @@ class BleManager(private val context: Context) {
                 // 1. Time Sync requests
                 if (opcode == 12) {
                     logCallback("[!] Watch requesting Time Sync...")
-                    CoroutineScope(Dispatchers.IO).launch {
+                    scope.launch {
                         val ack = WatchProtocol.buildMasterPacket(seqCounter, 4, 12, byteArrayOf(1))
                         val sync = WatchProtocol.buildMasterPacket(0, 1, 104, WatchProtocol.getTimeSyncPayload())
                         sendChunks(ack)
@@ -704,16 +718,23 @@ class BleManager(private val context: Context) {
                                     val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date(startTime * 1000L))
                                     val dataBytes = payload.copyOfRange(offset + 4, offset + recordSize).map { String.format("%02X", it) }.joinToString(" ")
                                     var glucoseVal = 0f
-                                    if (recordSize >= 6) { // 4 bytes time + 2 bytes data
-                                        val rawLow = payload[offset + 4].toInt() and 0xFF
+                                    // Meal type byte (0=unknown,1=pre-breakfast,2=post-breakfast,3=pre-lunch,4=post-lunch,
+                                    //                  5=pre-dinner,6=post-dinner,7=pre-sleep) stored in value2
+                                    var mealType = 0f
+                                    if (recordSize >= 6) { // 4 bytes time + 1 meal-type byte + 1 data byte (or 2 LE bytes)
+                                        val rawLow  = payload[offset + 4].toInt() and 0xFF
                                         val rawHigh = payload[offset + 5].toInt() and 0xFF
-                                        val rawInt = rawLow or (rawHigh shl 8)
+                                        val rawInt  = rawLow or (rawHigh shl 8)
                                         glucoseVal = rawInt / 100f // e.g. 585 -> 5.85 mmol/L
                                     }
-                                    logCallback("  └── Glucose Record: Date=$dateStr, RawBytes=[$dataBytes], Val=$glucoseVal mmol/L")
-                                    
+                                    if (recordSize >= 7) {
+                                        // Byte at offset+6 is the meal-timing reference in the OEM protocol
+                                        mealType = (payload[offset + 6].toInt() and 0xFF).toFloat()
+                                    }
+                                    logCallback("  └── Glucose Record: Date=$dateStr, RawBytes=[$dataBytes], Val=$glucoseVal mmol/L, MealType=${mealType.toInt()}")
+
                                     HealthDataProcessor.pushRecord(
-                                        HealthRecord(HealthType.BG, startTime, glucoseVal, 0f)
+                                        HealthRecord(HealthType.BG, startTime, glucoseVal, mealType)
                                     )
                                 }
                             }
@@ -738,10 +759,27 @@ class BleManager(private val context: Context) {
                     return
                 }
 
-                // 15. Device Sync State (Opcode 9)
+                // 15. Device Sync State (Opcode 9) — DEV_SYNC
+                // Contains firmware version, hardware version, device name & MAC for device fingerprinting.
                 if (opcode == 9) {
-                    logCallback("[+] Device Sync (Opcode 9) received: ${payload.size} bytes of state data.")
-                    // Usually contains hardware version, firmware version, mac address, etc.
+                    if (payload.size >= 2) {
+                        val fwMajor = payload[0].toInt() and 0xFF
+                        val fwMinor = payload[1].toInt() and 0xFF
+                        val hwRev   = if (payload.size >= 3) (payload[2].toInt() and 0xFF) else 0
+                        logCallback("[📱] Device Sync (Opcode 9): FW=$fwMajor.$fwMinor, HW=$hwRev")
+                        if (payload.size >= 9) {
+                            // Bytes 3-8 are the watch's BLE MAC in little-endian order
+                            val macStr = (8 downTo 3).map { String.format("%02X", payload[it]) }.joinToString(":")
+                            logCallback("  └── Watch BLE MAC: $macStr")
+                        }
+                        if (payload.size > 9) {
+                            val nameBytes = payload.copyOfRange(9, payload.size)
+                            val deviceName = nameBytes.toString(Charsets.UTF_8).trimEnd('\u0000')
+                            if (deviceName.isNotEmpty()) logCallback("  └── Device Name: $deviceName")
+                        }
+                    } else {
+                        logCallback("[+] Device Sync (Opcode 9) received: ${payload.size} bytes")
+                    }
                     return
                 }
 
@@ -795,7 +833,7 @@ class BleManager(private val context: Context) {
         // bytes 4-7 remain 0
         
         val packet = WatchProtocol.buildMasterPacket(0, 1, 149, payload)
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        scope.launch {
             sendChunks(packet)
         }
     }
@@ -828,8 +866,8 @@ class BleManager(private val context: Context) {
                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(intent)
-                    
-                    CoroutineScope(Dispatchers.IO).launch {
+
+                    scope.launch {
                         delay(200)
                         sendSameScreenWrite(byteArrayOf(0xAA.toByte(), 0x55.toByte(), 0x04.toByte(), 0x01.toByte()))
                     }
@@ -845,7 +883,7 @@ class BleManager(private val context: Context) {
     fun readStandardDeviceStrings() {
         val deviceService = bluetoothGatt?.getService(UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb"))
         if (deviceService != null) {
-            CoroutineScope(Dispatchers.IO).launch {
+            scope.launch {
                 val chars = listOf(
                     "00002a24-0000-1000-8000-00805f9b34fb", // Model
                     "00002a25-0000-1000-8000-00805f9b34fb", // Serial

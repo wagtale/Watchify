@@ -5,23 +5,21 @@ import java.nio.ByteOrder
 
 object WatchProtocol {
     private var pidCounter = 0
-    private var seqCounter = 0
 
-    // Handshake Payload translation
-    val FULL_BIND_PAYLOAD = ("00000300016e000038003600080c006690fc5fb4010021aa3c00040067000c006848ff" +
-            "536a201c0002000004006d0104007a0104007b0108007c01ff07000005007801000000" +
-            "00000000000000000000").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-
+    /**
+     * Builds the composite DEV_SYNC_SETTINGS (opcode 0x6E / 110) packet.
+     * NOTE: SMS switch (0x7B) is intentionally excluded — it must be sent as a
+     * standalone packet via buildSmsSwitchPayload() to avoid sub-packet framing corruption.
+     */
     fun buildSyncSettingsPacket(
         isPairing: Boolean,
         callsEnabled: Boolean,
-        smsEnabled: Boolean,
         appsEnabled: Boolean
     ): List<ByteArray> {
         val userInfo = byteArrayOf(0x0C, 0x00, 0x66.toByte(), 0xE8.toByte(), 0x03, 0x00, 0x00, 0x01, 0x19, 0xAF.toByte(), 0x46, 0x00)
         val language = byteArrayOf(0x04, 0x00, 0x67.toByte(), 0x00)
-        
-        // Time
+
+        // Time sub-packet
         val timestamp = (System.currentTimeMillis() / 1000).toInt()
         val offset = (java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 1000).toInt()
         val timePayload = ByteBuffer.allocate(9).order(ByteOrder.LITTLE_ENDIAN)
@@ -34,24 +32,30 @@ object WatchProtocol {
         timeSubPacket[1] = 0
         timeSubPacket[2] = 0x68.toByte()
         System.arraycopy(timePayload, 0, timeSubPacket, 3, 9)
-        
-        val sensor = byteArrayOf(0x04, 0x00, 0x6D.toByte(), 0x01)
+
+        val sensor    = byteArrayOf(0x04, 0x00, 0x6D.toByte(), 0x01)
         val callSwitch = byteArrayOf(0x04, 0x00, 0x7A.toByte(), if (callsEnabled) 1 else 0)
-        val smsSwitch = byteArrayOf(0x04, 0x00, 0x7B.toByte(), if (smsEnabled) 1 else 0)
-        
-        val appBitmask = if (appsEnabled) byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()) else byteArrayOf(0x00, 0x00, 0x00, 0x00)
-        val appSwitch = byteArrayOf(0x08, 0x00, 0x7C.toByte(), 0x01, appBitmask[0], appBitmask[1], appBitmask[2], appBitmask[3])
-        
+
+        val appBitmask = if (appsEnabled)
+            byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte())
+        else
+            byteArrayOf(0x00, 0x00, 0x00, 0x00)
+        val appSwitch  = byteArrayOf(0x08, 0x00, 0x7C.toByte(), 0x01, appBitmask[0], appBitmask[1], appBitmask[2], appBitmask[3])
+
         val pairFinish = byteArrayOf(0x05, 0x00, 0x78.toByte(), if (isPairing) 1 else 0, 0x00)
-        
-        val subPackets = userInfo + language + timeSubPacket + sensor + callSwitch + smsSwitch + appSwitch + pairFinish
-        
+
+        // Ordered list of sub-packets — count is derived dynamically
+        val subPacketList = listOf(userInfo, language, timeSubPacket, sensor, callSwitch, appSwitch, pairFinish)
+        val subPackets = subPacketList.reduce { acc, b -> acc + b }
+        val subPacketCount = subPacketList.size
+
         val totalLength = subPackets.size + 1
-        val header = ByteArray(3)
-        header[0] = (totalLength and 0xFF).toByte()
-        header[1] = ((totalLength shr 8) and 0xFF).toByte()
-        header[2] = 8 // 8 subpackets
-        
+        val header = byteArrayOf(
+            (totalLength and 0xFF).toByte(),
+            ((totalLength shr 8) and 0xFF).toByte(),
+            subPacketCount.toByte()
+        )
+
         val payload = header + subPackets
         return buildMasterPacket(0, 1, 110, payload)
     }
@@ -117,15 +121,17 @@ object WatchProtocol {
 
     fun buildNoticePayload(appId: Int, title: String, body: String): ByteArray {
         val cleanTitle = title.take(24)
-        val cleanBody = body.take(120)
-        
-        // Title uses direct character-to-byte casting (like DataConvertUtils.f)
-        val titleBytes = ByteArray(cleanTitle.length) { cleanTitle[it].code.toByte() }
+        val cleanBody  = body.take(120)
+
+        // OEM uses GBK for the title field (DataConvertUtils.f). UTF-8 is a safe cross-platform
+        // fallback that correctly handles all scripts; pure-ASCII content is identical in both.
+        val titleCharset = try { java.nio.charset.Charset.forName("GBK") } catch (e: Exception) { Charsets.UTF_8 }
+        val titleBytes = cleanTitle.toByteArray(titleCharset)
         // Body uses standard UTF-8
         val bodyBytes = cleanBody.toByteArray(Charsets.UTF_8)
-        
+
         val titleFieldType = 0x01.toByte() // 1 = Title/Sender field
-        
+
         val items = ByteArray(1 + 1 + titleBytes.size + 1 + 1 + bodyBytes.size)
         var idx = 0
         items[idx++] = titleFieldType
@@ -135,12 +141,12 @@ object WatchProtocol {
         items[idx++] = 0x02.toByte() // 2 = Body field
         items[idx++] = bodyBytes.size.toByte()
         System.arraycopy(bodyBytes, 0, items, idx, bodyBytes.size)
- 
+
         val header = ByteBuffer.allocate(6).order(ByteOrder.LITTLE_ENDIAN)
         header.putInt((System.currentTimeMillis() / 1000).toInt())
         header.put(appId.toByte())
         header.put(2.toByte()) // 2 fields: Title/Sender and Body
- 
+
         return header.array() + items
     }
 
@@ -276,61 +282,25 @@ object WatchProtocol {
         return buffer.array()
     }
 
-    fun calculateCrc16(data: ByteArray): Int {
-        var crc = 0
-        for (b in data) {
-            crc = crc.xor((b.toInt() and 0xFF) shl 8)
-            for (i in 0 until 8) {
-                if (crc and 0x8000 != 0) {
-                    crc = (crc shl 1).xor(0x8005)
-                } else {
-                    crc = crc shl 1
-                }
-                crc = crc and 0xFFFF
-            }
-        }
-        return crc
-    }
+    // -------------------------------------------------------------------------
+    // BLE feature negotiation packets (sent during handshake)
+    // -------------------------------------------------------------------------
 
-    @Synchronized
-    fun buildSecurePacket(opcode: Int, payload: ByteArray): ByteArray {
-        val seq = (seqCounter % 256).toByte()
-        val body = ByteArray(2 + payload.size)
-        body[0] = seq
-        body[1] = (opcode and 0xFF).toByte()
-        System.arraycopy(payload, 0, body, 2, payload.size)
+    /**
+     * DATA_TYPE_SUP_BLE_50 (opcode 29 / 0x1D).
+     * Informs the watch whether the phone supports BLE 5.0 so it can select
+     * the optimal PHY and connection interval. API 26+ devices are BLE 5 capable.
+     */
+    fun buildBle50SupportPacket(supported: Boolean): List<ByteArray> =
+        buildMasterPacket(0, 1, 29, byteArrayOf(if (supported) 1 else 0))
 
-        val bodyWithCrcLen = body.size + 2
-        val lengthPrefix = byteArrayOf(
-            (bodyWithCrcLen and 0xFF).toByte(),
-            ((bodyWithCrcLen shr 8) and 0xFF).toByte()
-        )
-        val crc = calculateCrc16(body)
-        val crcBytes = byteArrayOf(
-            (crc and 0xFF).toByte(),
-            ((crc shr 8) and 0xFF).toByte()
-        )
-
-        seqCounter++
-        return lengthPrefix + body + crcBytes
-    }
-
-    fun buildPaddedPacket(opcode: Int, payload: ByteArray): ByteArray {
-        val totalLen = payload.size + 3
-        val header = byteArrayOf(
-            (totalLen and 0xFF).toByte(),
-            ((totalLen shr 8) and 0xFF).toByte(),
-            (opcode and 0xFF).toByte()
-        )
-        val rawPacket = header + payload
-        val remainder = rawPacket.size % 20
-        return if (remainder != 0) {
-            val padLen = rawPacket.size + (20 - remainder)
-            rawPacket.copyOf(padLen)
-        } else {
-            rawPacket
-        }
-    }
+    /**
+     * DATA_TYPE_EXT_PID (opcode 31 / 0x1F).
+     * Platform identifier — tells the watch which companion app family is connecting.
+     * Universal = 8, ZK platform = 9. Defaults to Universal.
+     */
+    fun buildExtPidPacket(pid: Int = 8): List<ByteArray> =
+        buildMasterPacket(0, 1, 31, byteArrayOf((pid and 0xFF).toByte()))
 
     fun buildFindDevicePacket(start: Boolean): List<ByteArray> {
         val payload = byteArrayOf(if (start) 1 else 0)

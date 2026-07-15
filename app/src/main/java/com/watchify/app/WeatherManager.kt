@@ -77,17 +77,20 @@ object WeatherManager {
                         ipConn.connectTimeout = 5000
                         val ipText = ipConn.inputStream.bufferedReader().use { it.readText() }
                         val ipJson = JSONObject(ipText)
-                        if (ipJson.getString("status") == "success") {
-                            lat = ipJson.getDouble("lat")
-                            lon = ipJson.getDouble("lon")
-                            val detectedCity = ipJson.getString("city")
+                        // ipapi.co returns "latitude"/"longitude"/"city" — there is no "status" field
+                        val ipLat = ipJson.optDouble("latitude", Double.NaN)
+                        val ipCity = ipJson.optString("city", "")
+                        if (!ipLat.isNaN() && ipCity.isNotEmpty()) {
+                            lat = ipLat
+                            lon = ipJson.optDouble("longitude", 0.0)
+                            val detectedCity = ipCity
                             prefs.edit()
                                 .putFloat("last_lat", lat.toFloat())
                                 .putFloat("last_lon", lon.toFloat())
                                 .putString("weather_city", detectedCity)
                                 .apply()
                             foundLocation = true
-                            
+
                             // Broadcast city update to update MainActivity UI if open
                             val intent = android.content.Intent("com.watchify.app.CITY_UPDATED")
                             intent.setPackage(context.packageName)
