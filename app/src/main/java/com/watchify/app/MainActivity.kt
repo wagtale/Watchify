@@ -933,14 +933,38 @@ class MainActivity : AppCompatActivity() {
         headerGlass.targetView = contentFrame
         bottomGlass.targetView = contentFrame
 
-        homeScroll.setOnScrollChangeListener { _, _, _, _, _ ->
+        var isHeaderHidden = false
+        val scrollListener = View.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             headerGlass.invalidate()
             bottomGlass.invalidate()
+            
+            val dy = scrollY - oldScrollY
+            if (dy > 20 && !isHeaderHidden) {
+                isHeaderHidden = true
+                headerLayout.animate()
+                    .translationY(-150f)
+                    .scaleX(0.8f)
+                    .scaleY(0.4f)
+                    .alpha(0f)
+                    .setDuration(350)
+                    .setInterpolator(android.view.animation.AnticipateInterpolator(1.5f))
+                    .start()
+            } else if (dy < -20 && isHeaderHidden) {
+                isHeaderHidden = false
+                headerLayout.animate()
+                    .translationY(0f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .alpha(1f)
+                    .setDuration(450)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(1.5f))
+                    .start()
+            }
         }
-        healthScroll.setOnScrollChangeListener { _, _, _, _, _ ->
-            headerGlass.invalidate()
-            bottomGlass.invalidate()
-        }
+
+        homeScroll.setOnScrollChangeListener(scrollListener)
+        healthScroll.setOnScrollChangeListener(scrollListener)
+        analyticsScroll.setOnScrollChangeListener(scrollListener)
 
         setContentView(mainRootLayout)
     }
