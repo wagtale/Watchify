@@ -36,7 +36,18 @@ class HealthDatabaseHelper(context: Context) : SQLiteOpenHelper(context, "health
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Upgrade logic if needed in the future
+        // Preserve data across version upgrades by copying to a temporary table
+        db.execSQL("ALTER TABLE records RENAME TO records_old")
+        onCreate(db)
+        
+        // Attempt to copy over existing data, ignoring new columns (they will be null/default)
+        try {
+            db.execSQL("INSERT INTO records (type, timestamp, value1, value2) SELECT type, timestamp, value1, value2 FROM records_old")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            db.execSQL("DROP TABLE IF EXISTS records_old")
+        }
     }
 }
 
