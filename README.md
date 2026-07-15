@@ -93,6 +93,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 ## Security & Limitations
 
 *   **Notification Interception:** Watchify parses incoming notifications (including 2FA and banking alerts) to forward them to the watch. This content is sent over the watch's standard unencrypted BLE channel. In `Debug` builds, notification text is briefly logged to the local Android Logcat for diagnostics.
+*   **BLE Link Encryption:** The watch application-layer protocol does not support payload encryption. To secure your data stream over the air against interception, you **must** manually "Pair" (Bond) the watch in your Android system Bluetooth settings to enforce AES link-layer encryption.
 *   **Database Access:** To protect sensitive metrics (heart rate, blood oxygen, sleep patterns, etc.), `adb backup` extraction is explicitly disabled. 
 
 ## Setup & Building
