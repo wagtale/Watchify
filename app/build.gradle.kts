@@ -20,8 +20,19 @@ android {
         applicationId = "com.watchify.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        
+        fun getGitCommitCount(): Int {
+            return try {
+                val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").redirectErrorStream(true).start()
+                process.inputStream.bufferedReader().readText().trim().toInt()
+            } catch (e: Exception) {
+                1
+            }
+        }
+        val commitCount = getGitCommitCount()
+        
+        versionCode = commitCount
+        versionName = "1.0.$commitCount"
         
         buildConfigField("String", "WINDY_API_KEY", "\"${envProps.getProperty("WINDY_API_KEY", "")}\"")
     }

@@ -615,7 +615,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { logView.append("\n[+] Notification switches updated & synced!") }
             }
         }
-        container.addView(createCard("DEVICE SETTINGS", callAlertCb, smsAlertCb, appAlertCb, applySwitchesBtn))
+        container.addView(createCard("DEVICE SETTINGS", timeSyncBtn, findWatchBtn, notiAccessBtn, callAlertCb, smsAlertCb, appAlertCb, applySwitchesBtn))
 
         // 3. Health & GPS
         val syncWeatherBtn = createButton("Update Location & Weather", "#1AFFFFFF", "#007AFF", R.drawable.ic_cloud_sun) {
@@ -628,7 +628,7 @@ class MainActivity : AppCompatActivity() {
                 logView.append("\n[*] Manual Weather & Location sync initiated...")
             }
         }
-        container.addView(createCard("LOCATION & WEATHER", syncWeatherBtn))
+        container.addView(createCard("LOCATION & WEATHER", cityInput, setRegionSyncWeatherBtn, syncWeatherBtn))
 
         // 4. Contacts & Media
         val syncContactsBtn = createButton("Sync Contacts", "#1AFFFFFF", "#007AFF", R.drawable.ic_book_user) {
