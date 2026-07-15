@@ -517,6 +517,26 @@ class MainActivity : AppCompatActivity() {
             addView(createExpandableHealthCard("Blood Glucose", R.drawable.ic_activity, bgGraph, 27, bgValueText))
             addView(createExpandableHealthCard("Body Temperature", R.drawable.ic_activity, tempGraph, 24, tempValueText))
             
+            val exportBtn = createButton("Export Data (CSV)", "#1AFFFFFF", "#007AFF", R.drawable.ic_cloud_sun) {
+                val csvFile = HealthDataProcessor.exportToCsv(this@MainActivity)
+                if (csvFile != null) {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this@MainActivity,
+                        "${applicationContext.packageName}.provider",
+                        csvFile
+                    )
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(android.content.Intent.createChooser(shareIntent, "Export Health Data"))
+                } else {
+                    android.widget.Toast.makeText(this@MainActivity, "Export failed", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            addView(exportBtn)
+            
             val footnote = TextView(this@MainActivity).apply {
                 text = "* Estimated from step count"
                 textSize = 12f

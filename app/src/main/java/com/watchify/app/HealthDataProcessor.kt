@@ -10,6 +10,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileWriter
 
 enum class HealthType {
     HEART_RATE, STEPS, SLEEP, SPO2, BP, BG, TEMP, HRV, SPORT
@@ -114,5 +116,31 @@ object HealthDataProcessor {
         }
         cursor.close()
         return result.takeLast(limit)
+    }
+
+    fun exportToCsv(context: Context): File? {
+        val db = dbHelper?.readableDatabase ?: return null
+        val exportFile = File(context.getExternalFilesDir(null), "watchify_health_export.csv")
+        try {
+            val writer = FileWriter(exportFile)
+            writer.append("Type,Timestamp,Value1,Value2\n")
+            val cursor = db.rawQuery("SELECT type, timestamp, value1, value2 FROM records ORDER BY timestamp ASC", null)
+            if (cursor.moveToFirst()) {
+                do {
+                    val type = cursor.getString(0)
+                    val ts = cursor.getLong(1)
+                    val v1 = cursor.getFloat(2)
+                    val v2 = cursor.getFloat(3)
+                    writer.append("$type,$ts,$v1,$v2\n")
+                } while (cursor.moveToNext())
+            }
+            cursor.close()
+            writer.flush()
+            writer.close()
+            return exportFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        }
     }
 }

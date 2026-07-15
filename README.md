@@ -90,6 +90,15 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 *   **`WatchProtocol.kt`:** Constructs outbound `0xAB` command byte arrays.
 *   **`MainActivity.kt`:** The primary Liquid Glass dashboard featuring dynamically rendered data graphs and bottom navigation.
 
+## Tested Devices
+
+Currently, the Watchify protocol implementation has been verified against the following hardware:
+
+*   **Host Device:** Redmi Note 13 Pro 5G (Android 14)
+*   **Watch Model:** *ZK-based Smartwatch (generic firmware)*
+
+*If you successfully connect and sync data with another watch model, please open an issue or PR to add it to this list!*
+
 ## Security & Limitations
 
 *   **Notification Interception:** Watchify parses incoming notifications (including 2FA and banking alerts) to forward them to the watch. This content is sent over the watch's standard unencrypted BLE channel. In `Debug` builds, notification text is briefly logged to the local Android Logcat for diagnostics.
