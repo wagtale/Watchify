@@ -146,7 +146,9 @@ class NotificationMonitor : NotificationListenerService() {
         lastNotificationHash = currentHash
         lastNotificationTime = currentTime
 
-        Log.d("NotificationMonitor", "Intercepted [$packageName] -> AppId $appId: $displayTitle - $displayBody")
+        if (BuildConfig.DEBUG) {
+            Log.d("NotificationMonitor", "Intercepted [$packageName] -> AppId $appId: $displayTitle - $displayBody")
+        }
 
         // Send over BLE on a background coroutine
         CoroutineScope(Dispatchers.IO).launch {

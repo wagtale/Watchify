@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:name=".WatchApplication"
         android:label="Watchify"
         android:icon="@mipmap/ic_launcher"

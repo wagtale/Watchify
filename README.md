@@ -90,7 +90,12 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 *   **`WatchProtocol.kt`:** Constructs outbound `0xAB` command byte arrays.
 *   **`MainActivity.kt`:** The primary Liquid Glass dashboard featuring dynamically rendered data graphs and bottom navigation.
 
-## Setup \u0026 Building
+## Security & Limitations
+
+*   **Notification Interception:** Watchify parses incoming notifications (including 2FA and banking alerts) to forward them to the watch. This content is sent over the watch's standard unencrypted BLE channel. In `Debug` builds, notification text is briefly logged to the local Android Logcat for diagnostics.
+*   **Database Access:** To protect sensitive metrics (heart rate, blood oxygen, sleep patterns, etc.), `adb backup` extraction is explicitly disabled. 
+
+## Setup & Building
 
 1. Clone this repository.
 2. Create a `.env` file in the root directory and add your Windy API key:
