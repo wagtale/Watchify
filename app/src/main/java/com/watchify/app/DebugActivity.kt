@@ -29,6 +29,10 @@ class DebugActivity : AppCompatActivity() {
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         
+        val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
+        
         bleManager = WatchApplication.instance.bleManager
 
         val sfPro = ResourcesCompat.getFont(this, R.font.sf_pro)
@@ -45,8 +49,12 @@ class DebugActivity : AppCompatActivity() {
             )
             isFillViewport = true
             clipToPadding = false
-            setPadding(0, 160, 0, 160)
             isVerticalScrollBarEnabled = false
+        }
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, insets.top + 120, 0, insets.bottom + 120)
+            windowInsets
         }
 
         val container = LinearLayout(this).apply {
