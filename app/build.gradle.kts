@@ -12,6 +12,12 @@ if (envFile.exists()) {
     envProps.load(FileInputStream(envFile))
 }
 
+val keystoreFile = project.rootProject.file("keystore.properties")
+val keystoreProps = Properties()
+if (keystoreFile.exists()) {
+    keystoreProps.load(FileInputStream(keystoreFile))
+}
+
 android {
     namespace = "com.watchify.app"
     compileSdk = 34
@@ -48,10 +54,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("release.jks")
-            storePassword = "watchify123"
-            keyAlias = "watchify"
-            keyPassword = "watchify123"
+            storeFile = file(keystoreProps.getProperty("storeFile", "release.jks"))
+            storePassword = keystoreProps.getProperty("storePassword", "")
+            keyAlias = keystoreProps.getProperty("keyAlias", "")
+            keyPassword = keystoreProps.getProperty("keyPassword", "")
         }
     }
 

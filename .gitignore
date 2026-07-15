@@ -16,3 +16,4 @@
 build/
 .gemini/
 *.jks
+keystore.properties
