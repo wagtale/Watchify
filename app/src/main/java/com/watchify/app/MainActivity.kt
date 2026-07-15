@@ -102,6 +102,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateConnectionStatus()
+        // Refresh graphs from SQLite every time the user returns to the app
+        // (covers the case where the WatchDriverService pushed new data while backgrounded)
+        updateHealthGraph()
+        updateAnalyticsView()
         val filter = android.content.IntentFilter("com.watchify.app.BATTERY_LEVEL").apply {
             addAction("com.watchify.app.HEALTH_DATA_UPDATED")
             addAction("com.watchify.app.CITY_UPDATED")
@@ -420,11 +424,9 @@ class MainActivity : AppCompatActivity() {
         
         // Background processor is already spinning via WatchApplication
 
-        
-        // Initial render of stored data on startup
-        updateHealthGraph()
-        updateAnalyticsView()
-        
+        // healthUpdateJob subscribes to live watch-push updates.
+        // The initial SQLite render is deferred until after setContentView() so all
+        // GraphView/TextView widgets are guaranteed to be initialised first.
         healthUpdateJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             HealthDataProcessor.updates.collect {
                 updateHealthGraph()
@@ -1008,6 +1010,11 @@ class MainActivity : AppCompatActivity() {
         analyticsScroll.setOnScrollChangeListener(scrollListener)
 
         setContentView(mainRootLayout)
+
+        // All views are now initialised — safe to render persisted SQLite data.
+        // This ensures graphs are populated on every cold open without needing a watch sync.
+        updateHealthGraph()
+        updateAnalyticsView()
     }
 
     

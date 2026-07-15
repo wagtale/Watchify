@@ -46,10 +46,12 @@ class WatchDriverService : Service() {
     }
 
     private var weatherJob: Job? = null
+    private var healthSyncJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundService()
         startWeatherSync()
+        startHealthSync()
         if (!WatchApplication.instance.bleManager.isConnected()) {
             WatchApplication.instance.bleManager.attemptAutoConnect()
         }
@@ -59,13 +61,33 @@ class WatchDriverService : Service() {
     private fun startWeatherSync() {
         weatherJob?.cancel()
         weatherJob = CoroutineScope(Dispatchers.IO).launch {
-            while (isActive) {
+            while (true) {
                 if (WatchApplication.instance.bleManager.isConnected()) {
                     WeatherManager.syncWeather(this@WatchDriverService, WatchApplication.instance.bleManager)
-                    // Request battery every 5 mins in background
+                    // Request battery every cycle in background
                     WatchApplication.instance.bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 3, 3, ByteArray(0)))
                 }
                 delay(5 * 60 * 1000L) // 5 minutes
+            }
+        }
+    }
+
+    /**
+     * Periodically requests a fast health data dump from the watch while running in the background.
+     * Keeps the SQLite database current so health graphs render correctly on every app cold open
+     * without requiring the user to manually trigger a watch sync.
+     */
+    private fun startHealthSync() {
+        healthSyncJob?.cancel()
+        healthSyncJob = CoroutineScope(Dispatchers.IO).launch {
+            delay(30 * 1000L) // 30s initial delay to let the connection settle first
+            while (true) {
+                if (WatchApplication.instance.bleManager.isConnected()) {
+                    WatchApplication.instance.bleManager.sendChunks(
+                        WatchProtocol.buildFastSyncRequests()
+                    )
+                }
+                delay(10 * 60 * 1000L) // every 10 minutes
             }
         }
     }
@@ -93,6 +115,7 @@ class WatchDriverService : Service() {
 
     override fun onDestroy() {
         weatherJob?.cancel()
+        healthSyncJob?.cancel()
         stopAlarm()
         unregisterReceiver(driverReceiver)
         super.onDestroy()
