@@ -24,6 +24,11 @@ class DebugActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        
         bleManager = WatchApplication.instance.bleManager
 
         val sfPro = ResourcesCompat.getFont(this, R.font.sf_pro)
@@ -39,6 +44,9 @@ class DebugActivity : AppCompatActivity() {
                 )
             )
             isFillViewport = true
+            clipToPadding = false
+            setPadding(0, 160, 0, 160)
+            isVerticalScrollBarEnabled = false
         }
 
         val container = LinearLayout(this).apply {
