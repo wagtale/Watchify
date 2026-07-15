@@ -727,6 +727,24 @@ class BleManager(private val context: Context) {
                     return
                 }
 
+                // 14. Camera Control (Opcode 116)
+                if (opcode == 116) {
+                    if (payload.isNotEmpty()) {
+                        when (payload[0].toInt()) {
+                            0x01 -> logCallback("[📷] Watch requested: Open Camera")
+                            0x00 -> {
+                                logCallback("[📷] Watch requested: Take Photo (Shutter)")
+                                val intent = Intent("com.watchify.app.CAMERA_SHUTTER")
+                                intent.setPackage(context.packageName)
+                                context.sendBroadcast(intent)
+                            }
+                            0x02 -> logCallback("[📷] Watch requested: Close Camera")
+                            else -> logCallback("[📷] Watch requested: Unknown Camera Command (${payload[0]})")
+                        }
+                    }
+                    return
+                }
+
                 val hexDump = payload.joinToString("") { String.format("%02X ", it) }
                 logCallback("[?] Received unhandled packet: Opcode $opcode | Payload: $hexDump")
             } catch (e: Throwable) {
