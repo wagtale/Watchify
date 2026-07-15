@@ -261,14 +261,22 @@ class DebugActivity : AppCompatActivity() {
         logCard.addView(logTitle)
 
         logConsole = TextView(this).apply {
-            setTextColor(Color.parseColor("#FFFFFF")) // Replaced green with white for logs
+            setTextColor(Color.parseColor("#FFFFFF"))
             textSize = 10f
             typeface = android.graphics.Typeface.MONOSPACE
             setPadding(16, 16, 16, 16)
-            maxLines = 20
             text = "> Debug console initialized.\n"
         }
-        logCard.addView(logConsole)
+        
+        val logScroll = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                800 // Fixed height for log box
+            )
+            addView(logConsole)
+        }
+        
+        logCard.addView(logScroll)
         container.addView(logCard)
 
         bleManager.registerLogCallback { msg ->
@@ -279,7 +287,7 @@ class DebugActivity : AppCompatActivity() {
     }
 
     private fun appendLog(msg: String) {
-        if (logConsole.lineCount > 20) {
+        if (logConsole.lineCount > 2000) {
             val currentText = logConsole.text.toString()
             val newlineIndex = currentText.indexOf('\n')
             if (newlineIndex != -1) {
@@ -287,6 +295,10 @@ class DebugActivity : AppCompatActivity() {
             }
         }
         logConsole.append(msg + "\n")
+        // Auto-scroll to bottom
+        (logConsole.parent as? ScrollView)?.let { scroll ->
+            scroll.post { scroll.fullScroll(android.view.View.FOCUS_DOWN) }
+        }
     }
 
     override fun onDestroy() {
