@@ -560,53 +560,35 @@ class MainActivity : AppCompatActivity() {
         container.addView(createCard("CONNECTION", spinner, scanBtn, connectSelectedBtn, disconnectBtn))
 
         // 2. Settings Card
-        val timeSyncBtn = createButton("Force Time Sync", "#1AFFFFFF", "#007AFF") {
-            CoroutineScope(Dispatchers.IO).launch {
-                bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 104, WatchProtocol.getTimeSyncPayload()))
-                runOnUiThread { logView.append("\n[+] Force Time Sync Pushed") }
-            }
+        val isNotificationAccessGranted = {
+            val pkgName = packageName
+            val flat = android.provider.Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+            flat != null && flat.contains(pkgName)
         }
-        
-        var isFindingWatch = false
-        val findWatchBtn = createButton("Find My Watch", "#1AFFFFFF", "#007AFF") {
-            isFindingWatch = !isFindingWatch
-            CoroutineScope(Dispatchers.IO).launch {
-                bleManager.sendChunks(WatchProtocol.buildFindDevicePacket(isFindingWatch))
-                runOnUiThread { 
-                    logView.append(if (isFindingWatch) "\n[*] Sending Find Watch signal..." else "\n[*] Stopped Find Watch signal.") 
+
+        val promptForNotificationAccess = {
+            android.app.AlertDialog.Builder(this@MainActivity)
+                .setTitle("Notification Access Required")
+                .setMessage("To read and send notifications to your watch, you must allow Notification Access.\n\nOn newer Android versions, you may first need to open App Info -> allow 'Restricted Settings' before enabling this permission.")
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
                 }
-            }
-        }
-        val notiAccessBtn = createButton("Notification Access Settings", "#1AFFFFFF", "#FF9500") {
-            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-        }
-
-        val prefs = getSharedPreferences("watch_prefs", Context.MODE_PRIVATE)
-        cityInput = android.widget.EditText(this).apply {
-            hint = "City for Weather (e.g. London)"
-            setHintTextColor(Color.GRAY)
-            setTextColor(Color.WHITE)
-            setText(prefs.getString("weather_city", ""))
-            setPadding(32, 32, 32, 32)
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#1C1C1E"))
-                cornerRadius = 16f
-            }
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                setMargins(0, 0, 0, 16)
-            }
-        }
-
-        val setRegionSyncWeatherBtn = createButton("Set Region & Sync Weather", "#1AFFFFFF", "#007AFF") {
-            val city = cityInput.text.toString().trim()
-            prefs.edit().putString("weather_city", city).apply()
-            WeatherManager.syncWeather(this@MainActivity, bleManager)
-            logView.append("\n[+] Set weather region to '$city' and syncing...")
+                .setNegativeButton("Cancel", null)
+                .show()
         }
 
         val callAlertCb = createCheckBox("Enable Bluetooth Calling", true, R.drawable.ic_bluetooth)
         val smsAlertCb = createCheckBox("Enable SMS Notifications", true, R.drawable.ic_message_square)
         val appAlertCb = createCheckBox("Enable App Notifications", true, R.drawable.ic_bell)
+        
+        val checkNotiPerms = android.widget.CompoundButton.OnCheckedChangeListener { cb, isChecked ->
+            if (isChecked && !isNotificationAccessGranted()) {
+                cb.isChecked = false
+                promptForNotificationAccess()
+            }
+        }
+        smsAlertCb.setOnCheckedChangeListener(checkNotiPerms)
+        appAlertCb.setOnCheckedChangeListener(checkNotiPerms)
         
         val applySwitchesBtn = createButton("Sync Settings to Watch", "#1AFFFFFF", "#007AFF", R.drawable.ic_refresh_cw) {
             CoroutineScope(Dispatchers.IO).launch {
@@ -615,7 +597,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { logView.append("\n[+] Notification switches updated & synced!") }
             }
         }
-        container.addView(createCard("DEVICE SETTINGS", timeSyncBtn, findWatchBtn, notiAccessBtn, callAlertCb, smsAlertCb, appAlertCb, applySwitchesBtn))
+        container.addView(createCard("DEVICE SETTINGS", callAlertCb, smsAlertCb, appAlertCb, applySwitchesBtn))
 
         // 3. Health & GPS
         val syncWeatherBtn = createButton("Update Location & Weather", "#1AFFFFFF", "#007AFF", R.drawable.ic_cloud_sun) {
@@ -628,7 +610,7 @@ class MainActivity : AppCompatActivity() {
                 logView.append("\n[*] Manual Weather & Location sync initiated...")
             }
         }
-        container.addView(createCard("LOCATION & WEATHER", cityInput, setRegionSyncWeatherBtn, syncWeatherBtn))
+        container.addView(createCard("LOCATION & WEATHER", syncWeatherBtn))
 
         // 4. Contacts & Media
         val syncContactsBtn = createButton("Sync Contacts", "#1AFFFFFF", "#007AFF", R.drawable.ic_book_user) {

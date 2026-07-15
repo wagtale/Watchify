@@ -170,6 +170,65 @@ class DebugActivity : AppCompatActivity() {
         systemCard.addView(btnDump)
         container.addView(systemCard)
 
+        // Experimental Commands
+        val expCard = createCardContainer(this)
+        val expTitle = TextView(this).apply {
+            text = "EXPERIMENTAL COMMANDS"
+            setTextColor(Color.parseColor("#8E8E93"))
+            textSize = 12f
+            isAllCaps = true
+            typeface = sfProBold
+            setPadding(16, 16, 16, 16)
+        }
+        expCard.addView(expTitle)
+
+        val timeSyncBtn = createButton("Force Time Sync", "#1AFFFFFF", "#007AFF") {
+            CoroutineScope(Dispatchers.IO).launch {
+                bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 104, WatchProtocol.getTimeSyncPayload()))
+                runOnUiThread { appendLog("\n[+] Force Time Sync Pushed") }
+            }
+        }
+        
+        var isFindingWatch = false
+        val findWatchBtn = createButton("Find My Watch", "#1AFFFFFF", "#007AFF") {
+            isFindingWatch = !isFindingWatch
+            CoroutineScope(Dispatchers.IO).launch {
+                bleManager.sendChunks(WatchProtocol.buildFindDevicePacket(isFindingWatch))
+                runOnUiThread { 
+                    appendLog(if (isFindingWatch) "\n[*] Sending Find Watch signal..." else "\n[*] Stopped Find Watch signal.") 
+                }
+            }
+        }
+
+        val prefs = getSharedPreferences("watch_prefs", Context.MODE_PRIVATE)
+        val cityInput = android.widget.EditText(this).apply {
+            hint = "City for Weather (e.g. London)"
+            setHintTextColor(Color.GRAY)
+            setTextColor(Color.WHITE)
+            setText(prefs.getString("weather_city", ""))
+            setPadding(32, 32, 32, 32)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1C1C1E"))
+                cornerRadius = 16f
+            }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(0, 0, 0, 16)
+            }
+        }
+
+        val setRegionSyncWeatherBtn = createButton("Set Region & Sync Weather", "#1AFFFFFF", "#007AFF") {
+            val city = cityInput.text.toString().trim()
+            prefs.edit().putString("weather_city", city).apply()
+            WeatherManager.syncWeather(this@DebugActivity, bleManager)
+            appendLog("\n[+] Set weather region to '$city' and syncing...")
+        }
+
+        expCard.addView(timeSyncBtn)
+        expCard.addView(findWatchBtn)
+        expCard.addView(cityInput)
+        expCard.addView(setRegionSyncWeatherBtn)
+        container.addView(expCard)
+
         // 3. Live Logs
         val logCard = createCardContainer(this)
         val logTitle = TextView(this).apply {
