@@ -978,9 +978,6 @@ class MainActivity : AppCompatActivity() {
 
         var isHeaderHidden = false
         val scrollListener = View.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
-            // Refresh the real-blur capture so it tracks the scrolled content beneath the glass
-            headerGlass.invalidateBlur()
-            bottomGlass.invalidateBlur()
             
             val dy = scrollY - oldScrollY
             if (dy > 20 && !isHeaderHidden) {
