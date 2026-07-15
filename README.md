@@ -12,10 +12,9 @@ Watchify is an open-source Android companion app for Bluetooth Low Energy (BLE) 
 
 ## Reverse-Engineered BLE Protocol
 
-We have fully reverse-engineered the undocumented BLE data stream for these watch types. The watch communicates over a custom GATT characteristic using a 16-byte fixed-header protocol.
+We have fully reverse-engineered the undocumented BLE data stream for these watch types. The watch communicates over a custom GATT characteristic using a 20-byte chunked protocol with a 10-byte header on the first fragment. 
 
-- `0xAB` - Outbound prefix
-- `0xBA` - Inbound prefix
+*(Note: If you are looking at raw serial/UART dumps from the watch hardware, you may see `0xAB` and `0xBA` framing bytes. These are stripped by the watch's BLE chip before transmission and are **not** present in the over-the-air GATT protocol).*
 
 ### Full Protocol Opcode Map
 
