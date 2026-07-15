@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="accessibility_service_description">Used by Watchify to tap the camera shutter button when you press the physical button on your watch.</string>
-</resources>

@@ -733,26 +733,8 @@ class BleManager(private val context: Context) {
                 }
 
                 // 14. Camera Control (Opcode 116)
+                // Stripped: Unable to reliably spoof hardware shutter button into background apps without root.
                 if (opcode == 116) {
-                    if (payload.isNotEmpty()) {
-                        when (payload[0].toInt()) {
-                            0x00 -> {
-                                // Trigger Shutter using Accessibility Service
-                                WatchAccessibilityService.instance?.clickShutter()
-
-                                // Also dispatch Media Play/Pause (some cameras use this)
-                                val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
-                                val playDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                                audioManager.dispatchMediaKeyEvent(playDown)
-                                val playUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                                audioManager.dispatchMediaKeyEvent(playUp)
-                                
-                                // Volume adjust trick (triggers volume listener in some camera apps)
-                                audioManager.adjustStreamVolume(android.media.AudioManager.STREAM_SYSTEM, android.media.AudioManager.ADJUST_RAISE, 0)
-                                audioManager.adjustStreamVolume(android.media.AudioManager.STREAM_SYSTEM, android.media.AudioManager.ADJUST_LOWER, 0)
-                            }
-                        }
-                    }
                     return
                 }
 
