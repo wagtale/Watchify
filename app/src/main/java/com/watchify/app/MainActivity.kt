@@ -819,7 +819,15 @@ class MainActivity : AppCompatActivity() {
                 androidx.core.view.WindowInsetsCompat.Type.systemBars() or 
                 androidx.core.view.WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(0, insets.top, 0, 0)
+            // Push the custom title bar down below the camera cutout
+            val lp = headerLayout.layoutParams as FrameLayout.LayoutParams
+            lp.setMargins(32, insets.top + 32, 32, 0)
+            headerLayout.layoutParams = lp
+            
+            // Push the scroll content down to clear the title bar
+            homeScroll.setPadding(0, insets.top + 320, 0, 320)
+            healthScroll.setPadding(0, insets.top + 320, 0, 320)
+            
             windowInsets
         }
 
