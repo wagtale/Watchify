@@ -719,7 +719,8 @@ class BleManager(private val context: Context) {
                     return
                 }
 
-                logCallback("[>] Received unhandled packet: Opcode $opcode")
+                val hexDump = payload.joinToString("") { String.format("%02X ", it) }
+                logCallback("[?] Received unhandled packet: Opcode $opcode | Payload: $hexDump")
             } catch (e: Throwable) {
                 logCallback("[-] Process Error: ${e.message}")
             }
