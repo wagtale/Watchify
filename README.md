@@ -20,6 +20,9 @@ We have fully reverse-engineered the undocumented BLE data stream for these watc
 
 Through decompilation and packet analysis, we have mapped the complete `ProtocolEnum` used by the watch firmware. This serves as the master list for anyone looking to build custom drivers or integrations:
 
+> [!NOTE]
+> *While all opcodes listed below exist in the decompiled firmware protocol map, many of the features marked as WIP (🚧) or Unsupported (❌) are yet to be proven as actively used or supported by the physical watch hardware. Some may be legacy artifacts or placeholders for different hardware SKUs.*
+
 #### Health & Telemetry
 | Status | Opcode | Name | Description |
 |---|---|---|---|
