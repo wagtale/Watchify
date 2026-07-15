@@ -768,6 +768,19 @@ class MainActivity : AppCompatActivity() {
         }
         container.addView(createCard("DIAGNOSTICS", logScroll))
 
+        val rebootBtn = createButton("Reboot Watch", "#1AFFFFFF", "#FF3B30", R.drawable.ic_refresh_cw) {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 118, ByteArray(0)))
+            }
+        }
+        val shutdownBtn = createButton("Shutdown Watch", "#1AFFFFFF", "#FF3B30", null) {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, 119, ByteArray(0)))
+            }
+        }
+        container.addView(createCard("DEVICE POWER", rebootBtn, shutdownBtn))
+
+
         // Developer Settings Button - Plain Link Style
         val btnDebug = Button(this).apply {
             text = "Developer Settings"
