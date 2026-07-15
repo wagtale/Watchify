@@ -734,6 +734,12 @@ class BleManager(private val context: Context) {
                             0x01 -> logCallback("[📷] Watch requested: Open Camera")
                             0x00 -> {
                                 logCallback("[📷] Watch requested: Take Photo (Shutter)")
+                                val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+                                val eventDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
+                                audioManager.dispatchMediaKeyEvent(eventDown)
+                                val eventUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
+                                audioManager.dispatchMediaKeyEvent(eventUp)
+                                
                                 val intent = Intent("com.watchify.app.CAMERA_SHUTTER")
                                 intent.setPackage(context.packageName)
                                 context.sendBroadcast(intent)
