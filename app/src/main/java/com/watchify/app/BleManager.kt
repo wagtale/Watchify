@@ -720,11 +720,64 @@ class BleManager(private val context: Context) {
                     return
                 }
 
+                // 13. Air Pressure & Altitude (Opcode 149)
+                if (opcode == 149) {
+                    logCallback("[☁️] Watch requested Air Pressure & Altitude")
+                    sendAltitudeAndPressure()
+                    return
+                }
+
                 val hexDump = payload.joinToString("") { String.format("%02X ", it) }
                 logCallback("[?] Received unhandled packet: Opcode $opcode | Payload: $hexDump")
             } catch (e: Throwable) {
                 logCallback("[-] Process Error: ${e.message}")
             }
+        }
+    }
+
+    private fun sendAltitudeAndPressure() {
+        var altitude = 0.0 // Default altitude if location unavailable
+
+        try {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+                
+                // Try GPS first, then Network
+                var location = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+                if (location == null) {
+                    location = locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+                }
+                
+                if (location != null && location.hasAltitude()) {
+                    altitude = location.altitude
+                    logCallback("  └── Fetched actual altitude: $altitude m")
+                } else {
+                    logCallback("  └── Location has no altitude, using default (0m)")
+                }
+            } else {
+                logCallback("  └── No location permission, using default altitude (0m)")
+            }
+        } catch (e: Exception) {
+            logCallback("  └── Failed to get altitude: ${e.message}")
+        }
+        
+        // Calculate air pressure (kPa * 100)
+        // formula from original app: (101.32 - (0.011 * altitude)) * 100
+        val pressure = ((101.32 - (0.011 * altitude)) * 100).toInt()
+        val altInt = altitude.toInt()
+        
+        logCallback("  └── Sending Altitude: ${altInt}m, Pressure: $pressure / 100 kPa")
+        
+        val payload = ByteArray(8)
+        payload[0] = (pressure and 0xFF).toByte()
+        payload[1] = ((pressure shr 8) and 0xFF).toByte()
+        payload[2] = (altInt and 0xFF).toByte()
+        payload[3] = ((altInt shr 8) and 0xFF).toByte()
+        // bytes 4-7 remain 0
+        
+        val packet = WatchProtocol.buildMasterPacket(0, 1, 149, payload)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            sendChunks(packet)
         }
     }
 
