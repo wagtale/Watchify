@@ -738,6 +738,14 @@ class BleManager(private val context: Context) {
                     return
                 }
 
+                // 15. Device Sync State (Opcode 9)
+                if (opcode == 9) {
+                    logCallback("[+] Device Sync (Opcode 9) received: ${payload.size} bytes of state data.")
+                    // Usually contains hardware version, firmware version, mac address, etc.
+                    return
+                }
+
+
                 val hexDump = payload.joinToString("") { String.format("%02X ", it) }
                 logCallback("[?] Received unhandled packet: Opcode $opcode | Payload: $hexDump")
             } catch (e: Throwable) {
