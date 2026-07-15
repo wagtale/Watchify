@@ -24,7 +24,12 @@ android {
         fun getGitCommitCount(): Int {
             return try {
                 val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").redirectErrorStream(true).start()
-                process.inputStream.bufferedReader().readText().trim().toInt()
+                val count = process.inputStream.bufferedReader().readText().trim().toInt()
+                
+                val diffProcess = ProcessBuilder("git", "status", "--porcelain").redirectErrorStream(true).start()
+                val hasChanges = diffProcess.inputStream.bufferedReader().readText().trim().isNotEmpty()
+                
+                if (hasChanges) count + 1 else count
             } catch (e: Exception) {
                 1
             }
