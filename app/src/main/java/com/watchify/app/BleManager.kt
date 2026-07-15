@@ -355,10 +355,10 @@ class BleManager(private val context: Context) {
                         val startTime = parseUint32LE(payload, 4)
                         val endTime = parseUint32LE(payload, 8)
 
-                        val sportName = when (sportId) {
-                            5 -> "Running"
-                            11 -> "Handball"
-                            else -> "Sport ID $sportId"
+                        val sportName = if (sportId > 0 && sportId <= SPORT_TYPES.size) {
+                            SPORT_TYPES[sportId - 1]
+                        } else {
+                            "Unknown ($sportId)"
                         }
 
                         val durationSecs = endTime - startTime
@@ -368,6 +368,14 @@ class BleManager(private val context: Context) {
                         logCallback("  └── Start: ${java.util.Date(startTime * 1000L)}")
                         logCallback("  └── End: ${java.util.Date(endTime * 1000L)}")
                         logCallback("  └── Duration: ${durationSecs}s")
+                        
+                        HealthDataProcessor.pushRecord(
+                            HealthRecord(HealthType.SPORT, startTime, sportId.toFloat(), durationSecs.toFloat())
+                        )
+                        
+                        val intent = Intent("com.watchify.app.HEALTH_DATA_UPDATED")
+                        intent.setPackage(context.packageName)
+                        context.sendBroadcast(intent)
                     }
                     return
                 }
@@ -701,37 +709,6 @@ class BleManager(private val context: Context) {
                                     
                                     HealthDataProcessor.pushRecord(
                                         HealthRecord(HealthType.BG, startTime, glucoseVal, 0f)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    val intent = Intent("com.watchify.app.HEALTH_DATA_UPDATED")
-                    intent.setPackage(context.packageName)
-                    context.sendBroadcast(intent)
-                    return
-                }
-
-                // 12. HRV (Opcode 35)
-                if (opcode == 35) {
-                    if (payload.size >= 3) {
-                        val recordCount = payload[2].toInt() and 0xFF
-                        logCallback("[*] Received HRV History: $recordCount records")
-                        if (recordCount > 0) {
-                            val recordSize = (payload.size - 3) / recordCount
-                            for (r in 0 until recordCount) {
-                                val offset = 3 + (r * recordSize)
-                                if (offset + recordSize <= payload.size && recordSize >= 4) {
-                                    val startTime = parseUint32LE(payload, offset)
-                                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date(startTime * 1000L))
-                                    var hrvVal = 0f
-                                    if (recordSize >= 5) {
-                                        hrvVal = (payload[offset + 4].toInt() and 0xFF).toFloat()
-                                    }
-                                    logCallback("  └── HRV Record: Date=$dateStr, Val=$hrvVal ms")
-                                    
-                                    HealthDataProcessor.pushRecord(
-                                        HealthRecord(HealthType.HRV, startTime, hrvVal, 0f)
                                     )
                                 }
                             }

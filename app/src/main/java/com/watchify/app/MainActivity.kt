@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var graphView: GraphView
     private lateinit var stepsGraph: GraphView
     private lateinit var caloriesGraph: GraphView
-    private lateinit var hrvGraph: GraphView
+    private lateinit var sportsContainer: LinearLayout
     private lateinit var sleepGraph: GraphView
     private lateinit var spo2Graph: GraphView
     private lateinit var bpGraph: GraphView
@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var hrValueText: TextView
     private lateinit var stepsValueText: TextView
     private lateinit var caloriesValueText: TextView
-    private lateinit var hrvValueText: TextView
+    private lateinit var sportsValueText: TextView
     private lateinit var sleepValueText: TextView
     private lateinit var spo2ValueText: TextView
     private lateinit var bpValueText: TextView
@@ -187,12 +187,65 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             
-            // HRV
-            val hrvHistory = HealthDataProcessor.getHistory(HealthType.HRV, 20)
-            if (hrvHistory.isNotEmpty() && ::hrvGraph.isInitialized) {
-                val hrvValues = hrvHistory.map { it.value1 }
-                hrvGraph.setData(hrvValues)
-                hrvValueText.text = "${hrvValues.last().toInt()} ms"
+            // Sports
+            val sportsHistory = HealthDataProcessor.getHistory(HealthType.SPORT, 100)
+            if (sportsHistory.isNotEmpty() && ::sportsContainer.isInitialized) {
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                cal.set(java.util.Calendar.MINUTE, 0)
+                val startOfDay = cal.timeInMillis / 1000L
+                
+                val todaySports = sportsHistory.filter { it.timestamp >= startOfDay }
+                sportsValueText.text = "${todaySports.size} Today"
+                
+                sportsContainer.removeAllViews()
+                
+                val displaySports = if (todaySports.isNotEmpty()) todaySports.reversed() else sportsHistory.reversed().take(3)
+                
+                for (sport in displaySports) {
+                    val sportId = sport.value1.toInt()
+                    val durationSecs = sport.value2.toInt()
+                    
+                    val sportName = if (sportId > 0 && sportId <= SPORT_TYPES.size) {
+                        SPORT_TYPES[sportId - 1]
+                    } else {
+                        "Unknown ($sportId)"
+                    }
+                    
+                    val timeStr = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.US).format(java.util.Date(sport.timestamp * 1000L))
+                    val mins = durationSecs / 60
+                    val secs = durationSecs % 60
+                    val durStr = String.format("%02d:%02d", mins, secs)
+                    
+                    val sportText = TextView(this@MainActivity).apply {
+                        text = "$timeStr - $sportName ($durStr)"
+                        setTextColor(Color.WHITE)
+                        textSize = 14f
+                        setPadding(0, 8, 0, 8)
+                        typeface = ResourcesCompat.getFont(this@MainActivity, R.font.sf_pro_regular)
+                    }
+                    sportsContainer.addView(sportText)
+                }
+                
+                val moreBtn = android.widget.Button(this@MainActivity).apply {
+                    text = "More Activity"
+                    setTextColor(Color.parseColor("#007AFF"))
+                    setBackgroundColor(Color.TRANSPARENT)
+                    setOnClickListener {
+                        val historyText = sportsHistory.reversed().joinToString("\n\n") { s ->
+                            val sId = s.value1.toInt()
+                            val name = if (sId > 0 && sId <= SPORT_TYPES.size) SPORT_TYPES[sId - 1] else "Unknown"
+                            val time = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date(s.timestamp * 1000L))
+                            "$time - $name (${s.value2.toInt() / 60}m ${s.value2.toInt() % 60}s)"
+                        }
+                        android.app.AlertDialog.Builder(this@MainActivity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                            .setTitle("Workout History")
+                            .setMessage(if (historyText.isEmpty()) "No history" else historyText)
+                            .setPositiveButton("Close", null)
+                            .show()
+                    }
+                }
+                sportsContainer.addView(moreBtn)
             }
             
             // Sleep
@@ -432,7 +485,10 @@ class MainActivity : AppCompatActivity() {
             graphView = GraphView(this@MainActivity)
             stepsGraph = GraphView(this@MainActivity)
             caloriesGraph = GraphView(this@MainActivity)
-            hrvGraph = GraphView(this@MainActivity)
+            sportsContainer = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
             sleepGraph = GraphView(this@MainActivity)
             spo2Graph = GraphView(this@MainActivity)
             bpGraph = GraphView(this@MainActivity)
@@ -442,7 +498,7 @@ class MainActivity : AppCompatActivity() {
             hrValueText = createValueTextView()
             stepsValueText = createValueTextView()
             caloriesValueText = createValueTextView()
-            hrvValueText = createValueTextView()
+            sportsValueText = createValueTextView()
             sleepValueText = createValueTextView()
             spo2ValueText = createValueTextView()
             bpValueText = createValueTextView()
@@ -452,7 +508,7 @@ class MainActivity : AppCompatActivity() {
             addView(createExpandableHealthCard("Heart Rate", R.drawable.ic_heart, graphView, 8, hrValueText))
             addView(createExpandableHealthCard("Steps", R.drawable.ic_activity, stepsGraph, 5, stepsValueText))
             addView(createExpandableHealthCard("Active Calories*", R.drawable.ic_activity, caloriesGraph, 5, caloriesValueText))
-            addView(createExpandableHealthCard("HRV", R.drawable.ic_heart, hrvGraph, 8, hrvValueText))
+            addView(createExpandableHealthCard("Workouts", R.drawable.ic_activity, sportsContainer, -1, sportsValueText))
             addView(createExpandableHealthCard("Sleep", R.drawable.ic_moon, sleepGraph, 6, sleepValueText))
             addView(createExpandableHealthCard("Blood Oxygen", R.drawable.ic_droplet, spo2Graph, 20, spo2ValueText))
             addView(createExpandableHealthCard("Blood Pressure", R.drawable.ic_stethoscope, bpGraph, 18, bpValueText))
@@ -900,7 +956,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun createExpandableHealthCard(title: String, iconRes: Int, graphView: GraphView, syncOpcode: Int, valueTextView: TextView): View {
+    private fun createExpandableHealthCard(title: String, iconRes: Int, contentView: View, syncOpcode: Int, valueTextView: TextView): View {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
@@ -947,15 +1003,21 @@ class MainActivity : AppCompatActivity() {
             visibility = View.GONE
             setPadding(0, 32, 0, 0)
             
-            graphView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 400)
-            addView(graphView)
-            
-            val syncBtn = createButton("Sync $title", "#1AFFFFFF", "#007AFF", iconRes) {
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, syncOpcode, ByteArray(0)))
-                }
+            if (contentView is GraphView) {
+                contentView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 400)
+            } else {
+                contentView.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
-            addView(syncBtn)
+            addView(contentView)
+            
+            if (syncOpcode > 0) {
+                val syncBtn = createButton("Sync $title", "#1AFFFFFF", "#007AFF", iconRes) {
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        bleManager.sendChunks(WatchProtocol.buildMasterPacket(0, 1, syncOpcode, ByteArray(0)))
+                    }
+                }
+                addView(syncBtn)
+            }
         }
         
         card.setOnClickListener {
