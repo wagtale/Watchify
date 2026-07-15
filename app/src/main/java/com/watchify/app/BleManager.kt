@@ -512,18 +512,19 @@ class BleManager(private val context: Context) {
                     return
                 }
 
-                // 6. Heart Rate (Opcodes 7, 8)
-                if (opcode == 7 || opcode == 8) {
+                // 6. Heart Rate (Opcodes 7, 8, 17)
+                if (opcode == 7 || opcode == 8 || opcode == 17) {
                     if (payload.size >= 3) {
                         val recordCount = payload[2].toInt() and 0xFF
-                        logCallback("[*] Received Heart Rate History: $recordCount records")
+                        val logName = if (opcode == 17) "Exercise Heart Rate" else "Heart Rate"
+                        logCallback("[*] Received $logName History: $recordCount records")
                         for (r in 0 until recordCount) {
                             val offset = 3 + (r * 5)
                             if (offset + 5 <= payload.size) {
                                 val startTime = parseUint32LE(payload, offset)
                                 val hr = payload[offset + 4].toInt() and 0xFF
                                 val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date(startTime * 1000))
-                                logCallback("  └── Heart Rate Record: Date=$dateStr, HR=$hr bpm")
+                                logCallback("  └── $logName Record: Date=$dateStr, HR=$hr bpm")
                                 
                                 HealthDataProcessor.pushRecord(
                                     HealthRecord(HealthType.HEART_RATE, startTime, hr.toFloat(), 0f)
