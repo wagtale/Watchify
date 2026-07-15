@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var graphView: GraphView
     private lateinit var stepsGraph: GraphView
     private lateinit var caloriesGraph: GraphView
+    private lateinit var hrvGraph: GraphView
     private lateinit var sleepGraph: GraphView
     private lateinit var spo2Graph: GraphView
     private lateinit var bpGraph: GraphView
@@ -152,6 +153,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var hrValueText: TextView
     private lateinit var stepsValueText: TextView
     private lateinit var caloriesValueText: TextView
+    private lateinit var hrvValueText: TextView
     private lateinit var sleepValueText: TextView
     private lateinit var spo2ValueText: TextView
     private lateinit var bpValueText: TextView
@@ -183,6 +185,14 @@ class MainActivity : AppCompatActivity() {
                     caloriesGraph.setData(calValues)
                     caloriesValueText.text = "${calValues.last().toInt()} kcal*"
                 }
+            }
+            
+            // HRV
+            val hrvHistory = HealthDataProcessor.getHistory(HealthType.HRV, 20)
+            if (hrvHistory.isNotEmpty() && ::hrvGraph.isInitialized) {
+                val hrvValues = hrvHistory.map { it.value1 }
+                hrvGraph.setData(hrvValues)
+                hrvValueText.text = "${hrvValues.last().toInt()} ms"
             }
             
             // Sleep
@@ -422,6 +432,7 @@ class MainActivity : AppCompatActivity() {
             graphView = GraphView(this@MainActivity)
             stepsGraph = GraphView(this@MainActivity)
             caloriesGraph = GraphView(this@MainActivity)
+            hrvGraph = GraphView(this@MainActivity)
             sleepGraph = GraphView(this@MainActivity)
             spo2Graph = GraphView(this@MainActivity)
             bpGraph = GraphView(this@MainActivity)
@@ -431,6 +442,7 @@ class MainActivity : AppCompatActivity() {
             hrValueText = createValueTextView()
             stepsValueText = createValueTextView()
             caloriesValueText = createValueTextView()
+            hrvValueText = createValueTextView()
             sleepValueText = createValueTextView()
             spo2ValueText = createValueTextView()
             bpValueText = createValueTextView()
@@ -440,6 +452,7 @@ class MainActivity : AppCompatActivity() {
             addView(createExpandableHealthCard("Heart Rate", R.drawable.ic_heart, graphView, 8, hrValueText))
             addView(createExpandableHealthCard("Steps", R.drawable.ic_activity, stepsGraph, 5, stepsValueText))
             addView(createExpandableHealthCard("Active Calories*", R.drawable.ic_activity, caloriesGraph, 5, caloriesValueText))
+            addView(createExpandableHealthCard("HRV", R.drawable.ic_heart, hrvGraph, 8, hrvValueText))
             addView(createExpandableHealthCard("Sleep", R.drawable.ic_moon, sleepGraph, 6, sleepValueText))
             addView(createExpandableHealthCard("Blood Oxygen", R.drawable.ic_droplet, spo2Graph, 20, spo2ValueText))
             addView(createExpandableHealthCard("Blood Pressure", R.drawable.ic_stethoscope, bpGraph, 18, bpValueText))

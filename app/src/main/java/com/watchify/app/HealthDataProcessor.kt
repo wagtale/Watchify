@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 enum class HealthType {
-    HEART_RATE, STEPS, SLEEP, SPO2, BP, BG, TEMP
+    HEART_RATE, STEPS, SLEEP, SPO2, BP, BG, TEMP, HRV
 }
 
 data class HealthRecord(

@@ -688,6 +688,37 @@ class BleManager(private val context: Context) {
                     return
                 }
 
+                // 12. HRV (Opcode 35)
+                if (opcode == 35) {
+                    if (payload.size >= 3) {
+                        val recordCount = payload[2].toInt() and 0xFF
+                        logCallback("[*] Received HRV History: $recordCount records")
+                        if (recordCount > 0) {
+                            val recordSize = (payload.size - 3) / recordCount
+                            for (r in 0 until recordCount) {
+                                val offset = 3 + (r * recordSize)
+                                if (offset + recordSize <= payload.size && recordSize >= 4) {
+                                    val startTime = parseUint32LE(payload, offset)
+                                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date(startTime * 1000L))
+                                    var hrvVal = 0f
+                                    if (recordSize >= 5) {
+                                        hrvVal = (payload[offset + 4].toInt() and 0xFF).toFloat()
+                                    }
+                                    logCallback("  └── HRV Record: Date=$dateStr, Val=$hrvVal ms")
+                                    
+                                    HealthDataProcessor.pushRecord(
+                                        HealthRecord(HealthType.HRV, startTime, hrvVal, 0f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    val intent = Intent("com.watchify.app.HEALTH_DATA_UPDATED")
+                    intent.setPackage(context.packageName)
+                    context.sendBroadcast(intent)
+                    return
+                }
+
                 logCallback("[>] Received unhandled packet: Opcode $opcode")
             } catch (e: Throwable) {
                 logCallback("[-] Process Error: ${e.message}")
