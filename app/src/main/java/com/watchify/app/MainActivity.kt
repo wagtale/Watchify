@@ -67,6 +67,16 @@ class MainActivity : AppCompatActivity() {
                             batteryBadge.text = "$level%"
                             val color = if (level > 20) "#34C759" else "#FF3B30"
                             batteryBadge.setTextColor(Color.parseColor(color))
+                            
+                            val iconResId = when {
+                                level > 75 -> R.drawable.ic_battery_full
+                                level > 25 -> R.drawable.ic_battery_medium
+                                else -> R.drawable.ic_battery_low
+                            }
+                            val battIcon = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, iconResId)
+                            battIcon?.setBounds(0, 0, 48, 48)
+                            battIcon?.setTint(Color.parseColor(color))
+                            batteryBadge.setCompoundDrawables(battIcon, null, null, null)
                         }
                     }
                 }
