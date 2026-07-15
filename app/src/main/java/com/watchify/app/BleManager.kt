@@ -401,7 +401,12 @@ class BleManager(private val context: Context) {
                         val sync = WatchProtocol.buildMasterPacket(0, 1, 104, WatchProtocol.getTimeSyncPayload())
                         sendChunks(ack)
                         sendChunks(sync)
-                        logCallback("[+] Time Synced Auto-Acked.")
+                        
+                        // Disable watch Bluetooth audio routing by default to prevent it from hijacking phone audio
+                        sendChunks(WatchProtocol.buildMasterPacket(0, 1, 52, byteArrayOf(0)))
+                        sendChunks(WatchProtocol.buildMasterPacket(0, 1, 152, byteArrayOf(0)))
+                        
+                        logCallback("[+] Time Synced & Watch Audio Disabled.")
                     }
                     return
                 }
@@ -731,21 +736,14 @@ class BleManager(private val context: Context) {
                 if (opcode == 116) {
                     if (payload.isNotEmpty()) {
                         when (payload[0].toInt()) {
-                            0x01 -> logCallback("[📷] Watch requested: Open Camera")
                             0x00 -> {
-                                logCallback("[📷] Watch requested: Take Photo (Shutter)")
+                                // Shutter clicked - spoof physical headset button press silently
                                 val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
                                 val eventDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
                                 audioManager.dispatchMediaKeyEvent(eventDown)
                                 val eventUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
                                 audioManager.dispatchMediaKeyEvent(eventUp)
-                                
-                                val intent = Intent("com.watchify.app.CAMERA_SHUTTER")
-                                intent.setPackage(context.packageName)
-                                context.sendBroadcast(intent)
                             }
-                            0x02 -> logCallback("[📷] Watch requested: Close Camera")
-                            else -> logCallback("[📷] Watch requested: Unknown Camera Command (${payload[0]})")
                         }
                     }
                     return
