@@ -348,6 +348,30 @@ class BleManager(private val context: Context) {
                     return
                 }
 
+                // Sport Mode (Opcode 10)
+                if (opcode == 10) {
+                    if (payload.size >= 12) {
+                        val sportId = payload[3].toInt() and 0xFF
+                        val startTime = parseUint32LE(payload, 4)
+                        val endTime = parseUint32LE(payload, 8)
+
+                        val sportName = when (sportId) {
+                            5 -> "Running"
+                            11 -> "Handball"
+                            else -> "Sport ID $sportId"
+                        }
+
+                        val durationSecs = endTime - startTime
+
+                        logCallback("[🏃] Workout Summary (Opcode 10)")
+                        logCallback("  └── Sport: $sportName")
+                        logCallback("  └── Start: ${java.util.Date(startTime * 1000L)}")
+                        logCallback("  └── End: ${java.util.Date(endTime * 1000L)}")
+                        logCallback("  └── Duration: ${durationSecs}s")
+                    }
+                    return
+                }
+
                 // Find Phone Watch Command
                 if (opcode == 11) {
                     val isStart = payload.isNotEmpty() && payload[0].toInt() == 1
