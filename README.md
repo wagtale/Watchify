@@ -48,7 +48,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `1` | `AUTH_KEY` | Handshake sequence. |
 | ✅ | `2` | `DEVICE_INFO` | Firmware version and hardware IDs. |
 | ✅ | `9` | `DEV_SYNC` | Initial device state synchronization. |
-| ✅ | `10` | `UNKNOWN_10` | Handled internally by parser. |
+| 🚧 | `10` | `SPORT MODE Data` | Sport mode BPM and Other data (Not fully implemented yet). |
 | ✅ | `12` | `TIME_SYNC_REQ` | Watch requests time sync on connect. |
 | 🚧 | `21` | `UNKNOWN_21` | Handled internally by parser. |
 | 🚧 | `22` | `FUNCTION_CONTROL` | Toggle watch features. |
