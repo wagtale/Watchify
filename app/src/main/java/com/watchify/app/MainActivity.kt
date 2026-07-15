@@ -418,10 +418,12 @@ class MainActivity : AppCompatActivity() {
         
         // Initial render of stored data on startup
         updateHealthGraph()
+        updateAnalyticsView()
         
         healthUpdateJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             HealthDataProcessor.updates.collect {
                 updateHealthGraph()
+                updateAnalyticsView()
             }
         }
         
