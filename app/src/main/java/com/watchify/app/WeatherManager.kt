@@ -72,7 +72,7 @@ object WeatherManager {
                 if (!foundLocation) {
                     try {
                         // Auto-detect location using IP API for seamless UX
-                        val ipUrl = "http://ip-api.com/json/"
+                        val ipUrl = "https://ipapi.co/json/"
                         val ipConn = URL(ipUrl).openConnection() as HttpURLConnection
                         ipConn.connectTimeout = 5000
                         val ipText = ipConn.inputStream.bufferedReader().use { it.readText() }

@@ -1209,7 +1209,7 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread { logView.append("\n[*] Contacting geolocator...") }
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val urlConnection = URL("http://ip-api.com/json").openConnection() as HttpURLConnection
+                val urlConnection = URL("https://ipapi.co/json").openConnection() as HttpURLConnection
                 urlConnection.connectTimeout = 3000
                 urlConnection.readTimeout = 3000
                 val text = urlConnection.inputStream.bufferedReader().use { it.readText() }
