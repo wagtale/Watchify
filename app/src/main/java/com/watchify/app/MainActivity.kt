@@ -577,6 +577,12 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
 
+        val prefs = getSharedPreferences("watch_prefs", Context.MODE_PRIVATE)
+        if (!isNotificationAccessGranted() && !prefs.getBoolean("has_prompted_noti_access", false)) {
+            promptForNotificationAccess()
+            prefs.edit().putBoolean("has_prompted_noti_access", true).apply()
+        }
+
         val callAlertCb = createCheckBox("Enable Bluetooth Calling", true, R.drawable.ic_bluetooth)
         val smsAlertCb = createCheckBox("Enable SMS Notifications", true, R.drawable.ic_message_square)
         val appAlertCb = createCheckBox("Enable App Notifications", true, R.drawable.ic_bell)
