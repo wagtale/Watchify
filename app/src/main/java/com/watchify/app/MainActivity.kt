@@ -370,12 +370,8 @@ class MainActivity : AppCompatActivity() {
         val homeScroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
+            setPadding(0, 320, 0, 320)
             isVerticalScrollBarEnabled = false
-        }
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(homeScroll) { view, windowInsets ->
-            val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, insets.top + 180, 0, insets.bottom + 180)
-            windowInsets
         }
 
         val container = LinearLayout(this).apply {
@@ -388,12 +384,8 @@ class MainActivity : AppCompatActivity() {
             isFillViewport = true
             visibility = View.GONE
             clipToPadding = false
+            setPadding(0, 320, 0, 320)
             isVerticalScrollBarEnabled = false
-        }
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(healthScroll) { view, windowInsets ->
-            val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, insets.top + 180, 0, insets.bottom + 180)
-            windowInsets
         }
 
         val healthContainer = LinearLayout(this).apply {
@@ -820,6 +812,15 @@ class MainActivity : AppCompatActivity() {
             addView(contentFrame)
             addView(headerLayout)
             addView(bottomBar)
+        }
+        
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainRootLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or 
+                androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(0, insets.top, 0, 0)
+            windowInsets
         }
 
         headerGlass.targetView = contentFrame

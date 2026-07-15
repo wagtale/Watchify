@@ -52,7 +52,10 @@ class DebugActivity : AppCompatActivity() {
             isVerticalScrollBarEnabled = false
         }
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, windowInsets ->
-            val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            val insets = windowInsets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or 
+                androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
             view.setPadding(0, insets.top + 120, 0, insets.bottom + 120)
             windowInsets
         }
