@@ -737,29 +737,19 @@ class BleManager(private val context: Context) {
                     if (payload.isNotEmpty()) {
                         when (payload[0].toInt()) {
                             0x00 -> {
-                                // Shutter clicked - spoof physical headset button press silently
+                                // Trigger Shutter using Accessibility Service
+                                WatchAccessibilityService.instance?.clickShutter()
+
+                                // Also dispatch Media Play/Pause (some cameras use this)
                                 val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
-                                
-                                // Request audio focus to ensure media keys go to the foreground app instead of background music players
-                                audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                                
-                                // Dispatch Headset Hook
-                                val eventDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                                audioManager.dispatchMediaKeyEvent(eventDown)
-                                val eventUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_HEADSETHOOK)
-                                audioManager.dispatchMediaKeyEvent(eventUp)
-                                
-                                // Dispatch Media Play/Pause (some cameras use this)
                                 val playDown = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                                 audioManager.dispatchMediaKeyEvent(playDown)
                                 val playUp = android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                                 audioManager.dispatchMediaKeyEvent(playUp)
-
+                                
                                 // Volume adjust trick (triggers volume listener in some camera apps)
                                 audioManager.adjustStreamVolume(android.media.AudioManager.STREAM_SYSTEM, android.media.AudioManager.ADJUST_RAISE, 0)
                                 audioManager.adjustStreamVolume(android.media.AudioManager.STREAM_SYSTEM, android.media.AudioManager.ADJUST_LOWER, 0)
-                                
-                                audioManager.abandonAudioFocus(null)
                             }
                         }
                     }
