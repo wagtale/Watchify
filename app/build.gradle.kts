@@ -30,8 +30,22 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.jks")
+            storePassword = "watchify123"
+            keyAlias = "watchify"
+            keyPassword = "watchify123"
+        }
+    }
+
     buildTypes {
         release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
             isMinifyEnabled = false
         }
     }
