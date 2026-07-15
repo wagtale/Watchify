@@ -17,18 +17,57 @@ We have fully reverse-engineered the undocumented BLE data stream for these watc
 - `0xAB` - Outbound prefix
 - `0xBA` - Inbound prefix
 
-### Uncovered Health Opcodes
+### Full Protocol Opcode Map
 
-| Opcode | Data Type | Parsing Logic |
+Through decompilation and packet analysis, we have mapped the complete `ProtocolEnum` used by the watch firmware. This serves as the master list for anyone looking to build custom drivers or integrations:
+
+#### Health & Telemetry
+| Opcode | Name | Description |
 |---|---|---|
-| `3` | Fast Sync Request | Triggers the watch to dump stored history. |
-| `5` | Steps | Incremental step counters. |
-| `6` | Sleep | Sleep stages and duration. |
-| `8` | Heart Rate | Standard BMP readings. |
-| `18` | Blood Pressure | Encodes Systolic and Diastolic values. |
-| `20` | Blood Oxygen (SpO2) | Percentage value. |
-| `24` | Body Temperature | 16-bit Little-Endian, divide by 100 (e.g. `3620` -> `36.2 °C`). |
-| `27` | Blood Glucose | 16-bit Little-Endian, divide by 100 (e.g. `619` -> `6.19 mmol/L`). |
+| `3` | `BATTERY_INFO` | Request/Receive battery percentage. |
+| `4` | `REAL_SPORT` | Real-time step/activity stream. |
+| `5` | `HISTORY_SPORT` | Bulk sync for historical steps. |
+| `6` | `SLEEP` | Sleep stage history and duration. |
+| `7` | `REAL_HEART_RATE` | Real-time BPM stream. |
+| `8` | `HISTORY_HEART_RATE` | Bulk sync for historical BPM. |
+| `17` | `EXERCISE_HEART_RATE` | BPM data tied to a specific workout. |
+| `18` | `BLOOD_PRESSURE` | Historical BP (Systolic/Diastolic). |
+| `19` | `ECG` | Electrocardiogram raw point data stream. |
+| `20` | `BLOOD_OXYGEN` | SpO2 percentage history. |
+| `24` | `REAL_TEMP` | Body temperature stream/history. |
+| `26` | `HISTORY_TEMP` | Bulk sync for body temperature. |
+| `27` | `BLOOD_SUGAR` | Blood glucose history. |
+| `35` | `REAL_HRV` | Heart Rate Variability stream. |
+| `133` | `MENSTRUAL_PERIOD_INFO` | Cycle tracking data. |
+
+#### Device Control & Setup
+| Opcode | Name | Description |
+|---|---|---|
+| `2` | `DEVICE_INFO` | Firmware version and hardware IDs. |
+| `9` | `DEV_SYNC` | Initial device state synchronization. |
+| `22` | `FUNCTION_CONTROL` | Toggle watch features. |
+| `25` | `RESTORE_FACTORY_SETTING` | Wipe device data. |
+| `102` | `USER_INFO` | Set age, weight, height. |
+| `103` | `LANGUAGE_SETTING` | Change UI language. |
+| `104` | `TIME` | Sync Unix timestamp. |
+| `118` | `RESET` | Soft reboot. |
+| `119` | `SHUTDOWN` | Power off device. |
+| `120` | `PAIR_FINISH` | Handshake completion. |
+
+#### Smart Features & Notifications
+| Opcode | Name | Description |
+|---|---|---|
+| `11` | `FIND_PHONE_OR_DEVICE` | Trigger ringing/vibration. |
+| `14` | `MUSIC_CONTROL` | Play/Pause/Skip commands from watch. |
+| `15` | `CALL_CONTROL_TO_APP` | Watch answering/rejecting call. |
+| `105` | `WEATHER` | Push weather forecasts to watch. |
+| `106` | `ALARM_CLOCK` | Sync wake-up alarms. |
+| `107` | `MESSAGE_NOTICE` | Push SMS/App notifications. |
+| `116` | `PHOTOGRAPH` | Remote camera shutter trigger. |
+| `131` | `DIAL_SYNC` | Custom watchface upload. |
+| `135` | `ADDRESS_BOOK` | Sync favorite contacts. |
+| `150` | `MEDICINE` | Pill reminder schedules. |
+| `154` | `AI_TEXT` | Push ChatGPT/AI response strings to UI. |
 
 ## Architecture
 
