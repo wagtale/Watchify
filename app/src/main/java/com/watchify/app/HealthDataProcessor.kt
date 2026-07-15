@@ -76,9 +76,30 @@ object HealthDataProcessor {
         }
     }
 
-    // Producer API for BleManager to push raw packets immediately
+    // Producer API for BleManager to push raw packets immediately.
+    // Records that fail the sanity check are silently dropped — the watch sends
+    // 0.0-padded placeholders when a sensor has no reading for a time slot.
     fun pushRecord(record: HealthRecord) {
-        channel.trySend(record)
+        if (record.isValid()) channel.trySend(record)
+    }
+
+    /**
+     * Returns true if the record contains a physiologically plausible, non-zero measurement.
+     * Each type has its own range derived from real-world medical limits.
+     */
+    private fun HealthRecord.isValid(): Boolean {
+        if (timestamp <= 0L) return false
+        return when (type) {
+            HealthType.HEART_RATE -> value1 >= 30f  && value1 <= 250f   // bpm
+            HealthType.STEPS      -> value1 >  0f                        // at least 1 step
+            HealthType.SLEEP      -> value1 >  0f                        // 0 = NONE / no data
+            HealthType.SPO2       -> value1 >= 50f  && value1 <= 100f   // %
+            HealthType.BP         -> value1 >= 40f  && value2 >= 20f    // systolic / diastolic mmHg
+            HealthType.BG         -> value1 >  0f   && value1 <= 50f    // mmol/L (>50 = sensor error)
+            HealthType.TEMP       -> value1 >= 30f  && value1 <= 45f    // °C (hypothermia–hyperthermia)
+            HealthType.HRV        -> value1 >  0f
+            HealthType.SPORT      -> value1 >  0f   && value2 >  0f    // sportId + duration both non-zero
+        }
     }
 
     // Consumer Logic: Persist and index the record
