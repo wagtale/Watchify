@@ -33,8 +33,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `18` | `BLOOD_PRESSURE` | Historical BP (Systolic/Diastolic). |
 | ❌ | `19` | `ECG` | Electrocardiogram raw point data stream. |
 | ✅ | `20` | `BLOOD_OXYGEN` | SpO2 percentage history. |
-| 🚧 | `24` | `REAL_TEMP` | Body temperature stream/history. |
-| ✅ | `26` | `HISTORY_TEMP` | Bulk sync for body temperature. |
+| ✅ | `24` | `REAL_TEMP` | Body temperature stream/history. |
 | ✅ | `27` | `BLOOD_SUGAR` | Blood glucose history. |
 | ❌ | `35` | `REAL_HRV` | Heart Rate Variability (Watch doesn't support it). |
 | 🚧 | `133` | `MENSTRUAL_PERIOD_INFO` | Cycle tracking data. |
@@ -43,12 +42,17 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 #### Device Control & Setup
 | Status | Opcode | Name | Description |
 |---|---|---|---|
+| ✅ | `1` | `AUTH_KEY` | Handshake sequence. |
 | ✅ | `2` | `DEVICE_INFO` | Firmware version and hardware IDs. |
 | ✅ | `9` | `DEV_SYNC` | Initial device state synchronization. |
+| ✅ | `10` | `UNKNOWN_10` | Handled internally by parser. |
 | ✅ | `12` | `TIME_SYNC_REQ` | Watch requests time sync on connect. |
+| 🚧 | `21` | `UNKNOWN_21` | Handled internally by parser. |
 | 🚧 | `22` | `FUNCTION_CONTROL` | Toggle watch features. |
+| 🚧 | `23` | `UNKNOWN_23` | Handled internally by parser. |
 | 🚧 | `25` | `RESTORE_FACTORY_SETTING` | Wipe device data. |
 | ✅ | `52` | `DEVICE_AUDIO_STATE` | Control BT audio output route. |
+| ✅ | `101` | `UNKNOWN_101` | Handled internally by parser. |
 | 🚧 | `102` | `USER_INFO` | Set age, weight, height. |
 | 🚧 | `103` | `LANGUAGE_SETTING` | Change UI language. |
 | ✅ | `104` | `TIME` | Sync Unix timestamp. |
@@ -56,6 +60,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `119` | `SHUTDOWN` | Power off device. |
 | ✅ | `120` | `PAIR_FINISH` | Handshake completion. |
 | ✅ | `152` | `PHONE_AUDIO_STATE` | Control BT audio output route. |
+| ✅ | `161` | `UNKNOWN_161` | Handled internally by parser. |
 
 #### Smart Features & Notifications
 | Status | Opcode | Name | Description |
@@ -66,10 +71,14 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `105` | `WEATHER` | Push weather forecasts to watch. |
 | 🚧 | `106` | `ALARM_CLOCK` | Sync wake-up alarms. |
 | ✅ | `107` | `MESSAGE_NOTICE` | Push SMS/App notifications. |
-| ❌ | `110` | `APP_SYNC` | Steps sync placeholder (nonexistent functionality). |
+| ✅ | `110` | `DEV_SYNC_SETTINGS` | Synchronize settings bitmask. |
+| ✅ | `113` | `MUSIC_METADATA` | Push track name and volume info. |
 | 🚧 | `116` | `PHOTOGRAPH` | Remote camera shutter (WIP/Stripped due to Android security). |
+| ✅ | `122` | `CALLS_SWITCH` | Toggle call notifications on watch. |
+| ✅ | `124` | `APP_SWITCH` | Toggle app notifications on watch. |
 | 🚧 | `131` | `DIAL_SYNC` | Custom watchface upload. |
 | 🚧 | `135` | `ADDRESS_BOOK` | Sync favorite contacts. |
+| ✅ | `140` | `WEATHER_PUSH` | Push weather conditions and UI data. |
 | 🚧 | `150` | `MEDICINE` | Pill reminder schedules. |
 | 🚧 | `154` | `AI_TEXT` | Push ChatGPT/AI response strings to UI. |
 
