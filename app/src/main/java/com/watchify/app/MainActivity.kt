@@ -413,8 +413,8 @@ class MainActivity : AppCompatActivity() {
         insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
         
-        // Initialize the Kafka-like Health Processor
-        HealthDataProcessor.init(this)
+        // Background processor is already spinning via WatchApplication
+
         
         // Initial render of stored data on startup
         updateHealthGraph()

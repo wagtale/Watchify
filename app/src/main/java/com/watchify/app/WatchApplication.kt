@@ -12,6 +12,9 @@ class WatchApplication : Application() {
         instance = this
         Log.d("WatchApplication", "UtraLink Application Initialized.")
         
+        // Ensure background processor is spinning before BLE starts pushing data
+        HealthDataProcessor.init(this)
+        
         bleManager = BleManager(this)
         
         // Auto-connect on application startup if a MAC address was saved
