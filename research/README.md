@@ -13,10 +13,8 @@ This folder contains the full reverse-engineering output from static analysis of
 | [CONSTANTS.md](CONSTANTS.md) | All extracted enums and constants — `SportType`, `NoticeType`, `RepeatWeek`, `AnswerType`, `WeatherType`, `TimeIntervalType`, etc. |
 | [API_ENDPOINTS.md](API_ENDPOINTS.md) | Third-party API endpoints identified in the app — weather, geolocation, OTA update check |
 | [EVENTBUS.md](EVENTBUS.md) | EventBus event class map — all inter-component communication events and their payload types |
-| [opcode_audit.md](opcode_audit.md) | Opcode-by-opcode audit cross-referencing protocol enum, parser implementations, and Watchify support status |
-| [protocol_features_spec.md](protocol_features_spec.md) | Detailed payload specifications for selected opcodes with byte-by-byte field mapping |
 | [SECURITY_NOTES.md](SECURITY_NOTES.md) | Security observations — cleartext transmission, lack of payload encryption, hardcoded credentials found in OEM app |
-| [security_audit_report.md](security_audit_report.md) | Full security audit report with severity ratings |
+
 
 ## Methodology
 
