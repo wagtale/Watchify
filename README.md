@@ -52,12 +52,12 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `9` | `DEV_SYNC` | Initial device state synchronization. |
 | 🚧 | `10` | `SPORT MODE Data` | Sport mode BPM and Other data (Not fully implemented yet). |
 | ✅ | `12` | `TIME_SYNC_REQ` | Watch requests time sync on connect. |
-| 🚧 | `21` | `UNKNOWN_21` | Handled internally by parser. |
+| 🚧 | `21` | `SENSOR_DATA_CONTROL` | Internal calibration command. |
 | 🚧 | `22` | `FUNCTION_CONTROL` | Toggle watch features. |
-| 🚧 | `23` | `UNKNOWN_23` | Handled internally by parser. |
+| 🚧 | `23` | `AUDIO_BLE_MAC` | Bluetooth audio routing MAC request. |
 | 🚧 | `25` | `RESTORE_FACTORY_SETTING` | Wipe device data. |
 | ✅ | `52` | `DEVICE_AUDIO_STATE` | Control BT audio output route. |
-| ✅ | `101` | `UNKNOWN_101` | Handled internally by parser. |
+| ✅ | `101` | `UNKNOWN_101` | Orphaned opcode. Spammed by watch during handshake but does not exist in OEM app source. |
 | 🚧 | `102` | `USER_INFO` | Set age, weight, height. |
 | 🚧 | `103` | `LANGUAGE_SETTING` | Change UI language. |
 | ✅ | `104` | `TIME` | Sync Unix timestamp. |
@@ -65,7 +65,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `119` | `SHUTDOWN` | Power off device. |
 | ✅ | `120` | `PAIR_FINISH` | Handshake completion. |
 | ✅ | `152` | `PHONE_AUDIO_STATE` | Control BT audio output route. |
-| ✅ | `161` | `UNKNOWN_161` | Handled internally by parser. |
+| ✅ | `161` | `UNKNOWN_161` | Orphaned opcode. Emitted by watch but missing from OEM app source. |
 
 #### Smart Features & Notifications
 | Status | Opcode | Name | Description |
