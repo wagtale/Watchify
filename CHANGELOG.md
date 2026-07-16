@@ -5,6 +5,28 @@ Versions are tagged in Git; entries without a tag number are unreleased or hotfi
 
 ---
 
+## [v1.0.54] — 2026-07-16
+### Added
+- **Inbound opcode logging** — every packet received from the watch now logs a single line in the debug console: `[←] Opcode N (NAME) Xb`. Shows the opcode number, human-readable name from the full `ProtocolEnum`, and payload byte count. No health data or personal content is included.
+- `opcodeLabel()` lookup covers all 35 known opcodes including ACK responses (`HEART_AUTO_SWITCH_ACK=128`, `TEMP_SETTING_ACK=136`) so auto-monitoring confirmation is now visible immediately after connect.
+
+---
+
+## [v1.0.53] — 2026-07-16
+### Fixed
+- **`0x80` heart auto switch payload wrong** — was sending 1 byte `[0x01]`; OEM source (`AutomaticHeartModel.java`) shows the watch requires **8 bytes**: `[state, state, 0, 0, 0, 0, 0, 0]` (state duplicated at bytes 0 and 1, rest zeroed). Watch was silently ignoring the malformed 1-byte packet so 24h auto HR was never actually enabled.
+- **`0x88` temp setting payload wrong** — was sending 2 bytes; OEM source (`TemperatureSettingModel.java`) shows it must be **3 bytes**: `[switch, intervalLo, intervalHi]` with the interval in minutes as a 2-byte little-endian integer. Default is 10 minutes (matching OEM default).
+### Added
+- **Emoji → ASCII mapping in notifications** — the watch display is GBK only; emoji code points (U+1F300+) are not encodable and were corrupting the watch notification UI. Common emojis now map to ASCII equivalents (`❤️`→`<3`, `👍`→`(+1)`, `🔥`→`(fire)`, `😊`→`:)`, `😢`→`:(`, etc.); all other supplementary plane characters are stripped before encoding.
+
+---
+
+## [v1.0.50] — 2026-07-16
+### Fixed
+- **Auto-monitoring packets sent but watch settings reset on reconnect** — watch resets all monitoring configuration on every new connection. Added `buildHeartAutoSwitchPacket()` (opcode `0x80`) and `buildTempMonitoringPacket()` (opcode `0x88`) and wired them into the post-connect sync sequence so they are sent on every connection.
+
+---
+
 ## [v1.0.50] — 2026-07-16
 ### Fixed
 - **Auto-monitoring never enabled on connect** — the watch resets all monitoring settings on reconnect and was never told to start background health checks, so data only appeared when the user manually triggered a reading on the watch face.
