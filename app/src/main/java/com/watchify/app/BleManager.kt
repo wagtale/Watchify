@@ -326,12 +326,53 @@ class BleManager(private val context: Context) {
             }
         }
 
+        private fun opcodeLabel(op: Int): String = when (op) {
+            2   -> "DEVICE_INFO"
+            3   -> "BATTERY"
+            4   -> "REAL_SPORT"
+            5   -> "HISTORY_SPORT"
+            6   -> "SLEEP"
+            7   -> "REAL_HEART_RATE"
+            8   -> "HISTORY_HEART_RATE"
+            9   -> "DEV_SYNC"
+            10  -> "SPORT_MODE"
+            11  -> "FIND_PHONE_OR_DEVICE"
+            12  -> "TIME_SYNC_REQUEST"
+            14  -> "MUSIC_CONTROL"
+            15  -> "CALL_CONTROL"
+            17  -> "EXERCISE_HEART_RATE"
+            18  -> "BLOOD_PRESSURE"
+            19  -> "ECG"
+            20  -> "BLOOD_OXYGEN"
+            21  -> "SENSOR_DATA_CONTROL"
+            22  -> "FUNCTION_CONTROL"
+            24  -> "REAL_TEMP"
+            26  -> "HISTORY_TEMP"
+            27  -> "BLOOD_SUGAR"
+            35  -> "REAL_HRV"
+            51  -> "DEV_TYPE"
+            52  -> "DEVICE_AUDIO_STATE"
+            101 -> "AUTH_RESPONSE"
+            104 -> "TIME"
+            110 -> "DEV_SYNC_SETTINGS"
+            116 -> "PHOTOGRAPH"
+            128 -> "HEART_AUTO_SWITCH_ACK"
+            136 -> "TEMP_SETTING_ACK"
+            149 -> "AIR_PRESSURE_ALTITUDE"
+            152 -> "PHONE_AUDIO_STATE"
+            153 -> "PHONE_AUDIO_WAKE"
+            161 -> "UNKNOWN_161"
+            201 -> "OTA_STATUS"
+            else -> "UNKNOWN"
+        }
+
         private fun processMasterPacket(header: ByteArray, payload: ByteArray) {
             try {
                 val seqCounter = header[3].toInt() and 0xFF
                 val direction = header[4].toInt() and 0xFF
                 val opcode = header[5].toInt() and 0xFF
 
+                logCallback("[←] Opcode $opcode (${opcodeLabel(opcode)}) ${payload.size}b")
             // Acknowledge incoming requests
             if (direction == 1 && opcode != 12) {
                 scope.launch {

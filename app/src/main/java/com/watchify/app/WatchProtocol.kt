@@ -119,9 +119,56 @@ object WatchProtocol {
         return buffer.array()
     }
 
+    /**
+     * Replace emoji and other non-watch-renderable code points with ASCII equivalents.
+     * The watch display supports only GBK (ASCII + Chinese); multi-byte emoji crash or
+     * display as garbage. Common emojis get a semantic text substitute; everything else
+     * in the Supplementary Multilingual Plane is stripped.
+     */
+    private fun String.stripForWatch(): String {
+        val sb = StringBuilder()
+        this.codePoints().forEach { cp ->
+            val replacement = when (cp) {
+                // Faces
+                0x1F600, 0x1F601, 0x1F603, 0x1F604, 0x1F606, 0x1F609, 0x1F60A, 0x1F642 -> ":)"
+                0x1F610, 0x1F611, 0x1F614, 0x1F615, 0x1F641, 0x1F62C -> ":|"
+                0x1F620, 0x1F621, 0x1F624, 0x1F625, 0x1F62D -> ":("
+                0x1F602, 0x1F923 -> ":D"
+                0x1F60D, 0x2764, 0x2665 -> "<3"
+                0x1F494 -> "</3"
+                0x1F44D -> "(+1)"
+                0x1F44E -> "(-1)"
+                0x1F44F -> "(clap)"
+                0x1F525 -> "(fire)"
+                0x2705 -> "(ok)"
+                0x274C -> "(x)"
+                0x26A0 -> "(!)"
+                0x1F514, 0x1F515 -> "(bell)"
+                0x1F4F1 -> "(phone)"
+                0x1F4E7 -> "(email)"
+                0x1F4AC -> "(msg)"
+                0x1F4F8 -> "(camera)"
+                0x23F0 -> "(alarm)"
+                0x1F389, 0x1F38A -> "(party)"
+                0x1F4AA -> "(strong)"
+                0x1F4B0 -> "(money)"
+                0x1F3E0 -> "(home)"
+                0x2B50, 0x1F31F -> "*"
+                // Strip anything in supplementary planes (emoji, pictographs, etc.)
+                else -> if (cp > 0xFFFF) "" else null
+            }
+            if (replacement != null) {
+                sb.append(replacement)
+            } else {
+                sb.appendCodePoint(cp)
+            }
+        }
+        return sb.toString().trim()
+    }
+
     fun buildNoticePayload(appId: Int, title: String, body: String): ByteArray {
-        val cleanTitle = title.take(24)
-        val cleanBody  = body.take(120)
+        val cleanTitle = title.stripForWatch().take(24)
+        val cleanBody  = body.stripForWatch().take(120)
 
         // OEM uses GBK for the title field (DataConvertUtils.f). UTF-8 is a safe cross-platform
         // fallback that correctly handles all scripts; pure-ASCII content is identical in both.
@@ -310,21 +357,38 @@ object WatchProtocol {
     /**
      * Opcode 0x80 — DATA_TYPE_HEART_AUTO_SWITCH.
      * Enables/disables 24-hour continuous heart rate monitoring on the watch.
-     * When enabled the watch measures HR autonomously every few minutes and pushes
-     * readings as DATA_TYPE_REAL_HEART_RATE (0x07) without the app requesting them.
-     * Must be sent on every connection — the watch does not persist this across resets.
+     *
+     * Payload format (from OEM AutomaticHeartModel.java):
+     *   byte[0] = state (1=on, 0=off)
+     *   byte[1] = state (duplicated — firmware requires both bytes identical)
+     *   byte[2..7] = 0x00 padding
+     *
+     * Must be sent on every connection — the watch does not persist this setting.
      */
-    fun buildHeartAutoSwitchPacket(enabled: Boolean): List<ByteArray> =
-        buildMasterPacket(0, 1, 0x80, byteArrayOf(if (enabled) 0x01 else 0x00))
+    fun buildHeartAutoSwitchPacket(enabled: Boolean): List<ByteArray> {
+        val state = if (enabled) 0x01.toByte() else 0x00.toByte()
+        val payload = ByteArray(8)
+        payload[0] = state
+        payload[1] = state  // OEM duplicates the value in byte[1]
+        return buildMasterPacket(0, 1, 0x80, payload)
+    }
 
     /**
      * Opcode 0x88 — DATA_TYPE_TEMP_SETTING.
-     * Enables automatic body temperature monitoring at the given interval.
-     * Payload: [switch (1=on)] [interval type (0x01 = 5 min, 0x02 = 10 min, 0x03 = 30 min)]
+     * Enables automatic body temperature monitoring at a given interval.
+     *
+     * Payload format (from OEM TemperatureSettingModel.java):
+     *   byte[0]   = tempSwitch (1=on, 0=off)
+     *   byte[1-2] = interval in minutes as 2-byte little-endian (OEM default = 10)
+     *
      * Must be sent on every connection.
      */
-    fun buildTempMonitoringPacket(enabled: Boolean, intervalType: Int = 0x01): List<ByteArray> =
-        buildMasterPacket(0, 1, 0x88, byteArrayOf(if (enabled) 0x01 else 0x00, (intervalType and 0xFF).toByte()))
+    fun buildTempMonitoringPacket(enabled: Boolean, intervalMinutes: Int = 10): List<ByteArray> {
+        val sw = if (enabled) 0x01.toByte() else 0x00.toByte()
+        val iLo = (intervalMinutes and 0xFF).toByte()
+        val iHi = ((intervalMinutes shr 8) and 0xFF).toByte()
+        return buildMasterPacket(0, 1, 0x88, byteArrayOf(sw, iLo, iHi))
+    }
 
     fun buildDataSyncRequests(): List<ByteArray> {
         val requests = mutableListOf<ByteArray>()
