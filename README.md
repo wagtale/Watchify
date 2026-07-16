@@ -89,7 +89,7 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 
 ## Protocol Research
 
-The [`research/`](research/) folder contains the full output of static analysis performed on the OEM companion app APK (`com.wtwd.utra`). The APK was decompiled with JADX and the resulting source was used to map the complete undocumented BLE protocol.
+The [`research/`](research/) folder contains the full output of static analysis performed on the OEM companion app APK (`com.wtwd.utra`), as well as various Python scripts used to probe the OEM's web APIs and reverse-engineer the watch face binary structures. The APK was decompiled with JADX and the resulting source was used to map the complete undocumented BLE protocol.
 
 Key documents:
 
@@ -103,6 +103,15 @@ Key documents:
 | [opcode_audit.md](research/opcode_audit.md) | Per-opcode audit cross-referenced with Watchify implementation |
 
 See [research/README.md](research/README.md) for the full document index and methodology.
+
+### Firmware (FOTA) Updates and Custom OS
+
+During our research into the OEM's firmware update API, we discovered that the manufacturer's OTA infrastructure is fundamentally broken due to a misconfigured Amazon S3 bucket (`InvalidBucketName`). As a result, it is physically impossible to download official firmware updates (`.img` or `.ufw`) over the air for analysis. 
+
+**Custom Watch Faces & Payloads:**
+We successfully pulled custom Watch Face (`.bin`) binaries. We discovered that the app utilizes the exact same Bluetrum FOTA Bluetooth transmission protocol to push both Watch Faces and OS updates. The app performs zero cryptographic hash checks (like MD5 or SHA256) before flashing; it relies solely on rudimentary file length checks (e.g. comparing offset `0x30` or `0x00` against total file size).
+
+Because there is zero cryptographic security on the payloads, it is theoretically possible to package and flash a custom OS (like FreeRTOS) over Bluetooth. However, due to the lack of hardware driver source code (display, radio, sensors) and the high risk of permanently hard-bricking the device without physical SWD/UART access, creating a custom OS is not currently pursued.
 
 ---
 

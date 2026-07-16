@@ -1,0 +1,204 @@
+# Apple Design Language Reference — for Dashboard Redesign
+
+Compiled from Apple's Human Interface Guidelines (HIG) and official developer resources.
+Intended as grounding context for a local AI redesigning a software/app dashboard (analytics, admin panel, etc.) in an Apple-inspired visual style.
+
+---
+
+## 1. Core Principles
+
+Apple's HIG is built on three (now four) foundational principles:
+
+- **Clarity** — text is legible at every size, icons are precise, adornments are subtle, and a focus on functionality motivates the design.
+- **Deference** — UI helps people understand and interact with content, but never competes with it. Chrome recedes; content leads.
+- **Depth** — visual layers and realistic motion convey hierarchy, impart vitality, and facilitate understanding.
+- **Harmony** (added with iOS 26 / "Liquid Glass" era, 2025) — shapes, materials, and interface elements align with the concentric geometry of the hardware and the surrounding software context, so the whole system feels of-a-piece.
+
+Practical translation for a dashboard: minimal chrome, generous whitespace, one accent color doing the work, content-first layout, and materials/motion used only to signal depth or state — never as decoration.
+
+---
+
+## 2. Typography
+
+**System typefaces:**
+- **SF Pro** — default UI font for iOS, iPadOS, macOS, tvOS. Two optical variants: **SF Pro Text** (below 20pt) and **SF Pro Display** (20pt+). Modern versions use a variable font that interpolates optical size automatically.
+- **SF Compact** — for watchOS / small, narrow contexts.
+- **SF Mono** — monospace, used for code and tabular/aligned numerals. Good choice for dashboard data tables and metrics.
+- **New York (NY)** — Apple's serif, works well for editorial or long-form content areas within a dashboard (e.g., report views).
+- **SF Arabic / SF Armenian / SF Georgian / SF Hebrew** — script-specific system font extensions, if you need multilingual support.
+
+**Text style scale** (reference sizes at default/Large setting; macOS values differ slightly from iOS):
+
+| Text Style | iOS/iPadOS | macOS |
+|---|---|---|
+| Large Title | 34pt | 26pt |
+| Title 1 | 28pt | ~22pt |
+| Title 2 | 22pt | ~17pt |
+| Title 3 | 20pt | ~15pt |
+| Headline | 17pt (semibold) | 13pt (semibold) |
+| Body | 17pt | 13pt |
+| Callout | 16pt | — |
+| Subhead | 15pt | — |
+| Footnote | 13pt | 10pt |
+| Caption 1 | 12pt | — |
+| Caption 2 | 11pt | — |
+
+**Rules:**
+- Minimum legible text size: 11pt system-wide.
+- Weights range Ultralight → Black (9 weights); use weight, not just size, to build hierarchy — e.g. an "emphasized" text style keeps the same size but goes bolder (this is how macOS headers like Calendar's month/year label work).
+- Tracking (letter-spacing) is automatically tightened at larger sizes and loosened at smaller sizes — don't apply flat tracking across all sizes if hand-building the type scale.
+- Support **Dynamic Type**: prioritize which content actually needs to scale up (body/important content) vs. what shouldn't (tab labels, chrome).
+- Limit the number of typefaces in one interface — mixing many faces breaks hierarchy and reads as inconsistent.
+- SF Symbols icons share the same weight axis as SF Pro text, so icon weight should always be matched to the adjacent text weight.
+
+---
+
+## 3. Color System
+
+Apple's guidance is explicit: **design to semantic roles, not fixed hex values.** System colors are dynamic — they shift for light/dark mode, increased contrast, and OS version. Treat any hex code below as a *community-measured approximation*, not an Apple-published spec.
+
+**Semantic roles to build your palette around:**
+- `label`, `secondaryLabel`, `tertiaryLabel`, `quaternaryLabel` — text hierarchy
+- `systemBackground`, `secondarySystemBackground`, `tertiarySystemBackground` — surface layers
+- `separator`, `opaqueSeparator` — dividers
+- `link` — interactive text
+- `systemBlue`, `systemGreen`, `systemRed`, `systemOrange`, `systemYellow`, `systemPink`, `systemPurple`, `systemIndigo`, `systemTeal`, `systemBrown`, `systemGray` (+ systemGray2–6) — accent/status colors
+
+**Commonly cited approximate values (light mode, macOS), for prototyping only:**
+
+| Role | Approx RGB |
+|---|---|
+| systemBlue | 0, 122, 255 |
+| systemGreen | 40, 205, 65 |
+| systemRed | 255, 59, 48 |
+| systemOrange | 255, 149, 0 |
+| systemYellow | 255, 204, 0 |
+| systemPink | 255, 45, 85 |
+| systemPurple | 175, 82, 222 |
+| systemIndigo | 88, 86, 214 |
+| systemTeal | 85, 190, 240 |
+| systemBrown | 162, 132, 94 |
+| systemGray | 142, 142, 147 |
+| labelColor | 0,0,0 @ 84.7% opacity |
+| secondaryLabelColor | 0,0,0 @ 49.8% opacity |
+| tertiaryLabelColor | 0,0,0 @ 25.9% opacity |
+| separatorColor | 0,0,0 @ ~10–20% opacity |
+
+**Dashboard application:**
+- Pick **one primary accent** (systemBlue is Apple's own default across most apps) for primary actions, active states, and key data highlights — don't spread multiple saturated accents across the same view.
+- Use status colors semantically and consistently: green = good/success, red = error/critical, orange/yellow = warning — a strong pattern for chart states, alerts, and KPI deltas.
+- Build light and dark variants together from the start; opacity-based label tiers (100/50/26/10%) are how Apple achieves hierarchy without introducing new hues.
+
+---
+
+## 4. Layout & Spacing
+
+- **Minimum tap/click target:** 44 × 44pt for any interactive control (buttons, icons, row actions). This is an explicit accessibility rule, not a suggestion.
+- **Spacing grid:** Apple doesn't publish an official grid the way Material Design does, but its own UI consistently reduces to an **8pt base grid with 4pt subdivisions** — a reliable working convention for a dashboard's card/grid spacing, padding, and gutters.
+- **Three-column layout (NavigationSplitView)** — the standard macOS/iPadOS dashboard/app shape:
+
+```
+┌─────────────┬───────────────┬─────────────────────┐
+│  Sidebar    │   Content     │      Detail          │
+│  (source    │  (list/grid   │  (selected item      │
+│   list)     │   of items)   │   detail/inspector)  │
+│  min 180pt  │   flexible    │   min 300pt,          │
+│  max 300pt  │               │   ideal 400pt+        │
+└─────────────┴───────────────┴─────────────────────┘
+```
+
+- **Form/content padding:** 16pt is a common standard inset for form sheets and cards.
+- **List row height:** 44pt standard.
+- Content should extend edge-to-edge under floating sidebars/toolbars where possible (a Liquid Glass-era pattern) rather than being boxed in by opaque chrome.
+
+---
+
+## 5. Materials ("Liquid Glass")
+
+Apple's 2025 redesign (WWDC25) introduced **Liquid Glass**, its current unified material system across iOS 26, iPadOS 26, macOS Tahoe 26, watchOS 26, tvOS 26, and visionOS 26.
+
+- It's a **translucent material that reflects and refracts surrounding content**, dynamically adapting between light and dark, and reacting to motion with specular highlights.
+- Used for: sidebars, toolbars, tab bars, floating panels/popovers, buttons, sliders, media controls, and system chrome (Dock, widgets, Lock Screen elements).
+- Comes in weight tiers, roughly: **regular/thin/thick glass**, mirroring older `.ultraThinMaterial` / `.regularMaterial` / `.thickMaterial` vibrancy blur levels for apps not fully on the newest APIs.
+- Design intent: glass and motion are used **to signal depth, feedback, or a change in context** — never purely decoratively.
+- For a dashboard: apply glass-like translucency to your sidebar and top toolbar/header; keep primary content surfaces (cards, charts, tables) on flatter, more opaque backgrounds so data stays legible and doesn't compete with the glass effect.
+
+---
+
+## 6. Iconography (SF Symbols)
+
+- **SF Symbols** is Apple's library of 7,000+ vector icons designed to align optically with SF Pro.
+- **9 weights** (matching text weights) and **3 scales** (small/medium/large), so icons can be weight-matched to adjacent text automatically.
+- Multi-layer construction supports built-in animation (e.g., a symbol "filling," "pulsing," or transitioning between states).
+- Symbols auto-mirror for right-to-left languages and have localized variants for 20+ scripts.
+- Design guidance: prefer symbols over custom icon sets when a concept maps to an existing one — consistency with the platform's icon language reads as more "native." When you do need custom icons (e.g., brand-specific dashboard glyphs), match SF Symbols' stroke weight, corner rounding, and optical sizing conventions so they sit naturally next to system icons.
+
+**Since you want to source icons yourself**, here are the official links:
+- SF Symbols app (browse/export/edit symbols): https://developer.apple.com/sf-symbols/
+- SF Symbols 7 direct download: `https://devimages-cdn.apple.com/design/resources/download/SF-Symbols-7.dmg`
+- SF Symbols 8 beta direct download: `https://devimages-cdn.apple.com/design/resources/download/SF-Symbols-8.dmg`
+- Icon Composer (build layered Liquid Glass app icons): https://developer.apple.com/icon-composer/
+
+---
+
+## 7. Fonts — Official Downloads
+
+| Font | Use | Link |
+|---|---|---|
+| SF Pro | iOS/iPadOS/macOS/tvOS system font | `https://devimages-cdn.apple.com/design/resources/download/SF-Pro.dmg` |
+| SF Compact | watchOS | `https://devimages-cdn.apple.com/design/resources/download/SF-Compact.dmg` |
+| SF Mono | Code/tabular data | `https://devimages-cdn.apple.com/design/resources/download/SF-Mono.dmg` |
+| New York | Serif/editorial | `https://devimages-cdn.apple.com/design/resources/download/NY.dmg` |
+| SF Arabic | Arabic script | `https://devimages-cdn.apple.com/design/resources/download/SF-Arabic.dmg` |
+| SF Armenian | Armenian script | `https://devimages-cdn.apple.com/design/resources/download/SF-Armenian.dmg` |
+| SF Georgian | Georgian script | `https://devimages-cdn.apple.com/design/resources/download/SF-Georgian.dmg` |
+| SF Hebrew | Hebrew script | `https://devimages-cdn.apple.com/design/resources/download/SF-Hebrew.dmg` |
+
+All under Apple's font license — free to use for interface design/mockups, with restrictions on redistribution. Full terms shown at install.
+
+---
+
+## 8. Official UI Kits & Templates (download yourself)
+
+From `developer.apple.com/design/resources/`:
+
+- **macOS 27 UI Kit** — Figma: `https://www.figma.com/community/file/1651309434229735362/macos-27` · Sketch: `https://sketch.com/s/57153a31-3379-4737-8ac6-dbfd6525f052`
+- **iOS/iPadOS 27 UI Kit** — Figma: `https://www.figma.com/community/file/1651309003795292092/ios-and-ipados-27` · Sketch: `https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02`
+- **App Icon Template** — Figma: `https://www.figma.com/community/file/1645923469870515372/app-icon-template-ios-ipados-and-watchos-27`
+- Full resource index (all platforms, tech-specific templates, product bezels): `https://developer.apple.com/design/resources/`
+
+---
+
+## 9. Dashboard-Specific Component Notes
+
+- **Sidebar / source list:** collapsible, floating glass material, icon + label rows, supports sections/grouping. Standard min width ~180pt, max ~300pt.
+- **Toolbars:** now largely glass-based and can float above content rather than being a solid bar; group related actions and let less-used ones collapse into an overflow menu.
+- **Cards/widgets:** flat or lightly-elevated surfaces (not glass) so metrics and charts stay high-contrast and readable; use consistent 8pt-multiple padding.
+- **Tables/lists:** 44pt row height, SF Mono or tabular-figure numerals for aligned numeric columns (good for KPI tables).
+- **Status/alerts:** rely on the semantic system colors (green/red/orange) plus an SF Symbol (checkmark, exclamation, xmark) rather than color alone, for accessibility.
+
+---
+
+## 10. Quick-Reference Summary (for prompting a local model)
+
+```
+Design system: Apple HIG-inspired
+Typography: SF Pro (Text <20pt / Display ≥20pt), SF Mono for data, 
+  scale: 34/28/22/20/17/17/16/15/13/12/11pt, weight range Ultralight–Black
+Color: semantic roles first (label/secondaryLabel/systemBackground), 
+  one primary accent (systemBlue ~#007AFF), status colors 
+  (green/red/orange) reserved for state only
+Layout: 8pt grid w/ 4pt subdivisions, 44pt min tap target, 
+  16pt content padding, 3-column split view (sidebar 180-300pt / 
+  content flexible / detail 300-400pt+)
+Material: translucent "glass" on chrome (sidebar/toolbar) only; 
+  flat opaque surfaces for data-bearing cards/tables
+Icons: SF Symbols-style — consistent stroke weight matched to 
+  adjacent text weight, optically aligned, monochrome by default
+Principles: Clarity, Deference, Depth, Harmony — content leads, 
+  chrome recedes, materials/motion signal state not decoration
+```
+
+---
+
+*Note on sourcing: Apple does not publish fixed hex values for its dynamic system colors — the RGB values above are community-measured approximations widely used for prototyping, not official specs. For anything shipping to the App Store or representing Apple's actual brand, always verify current values/assets directly against the live HIG and official resource pages linked above.*

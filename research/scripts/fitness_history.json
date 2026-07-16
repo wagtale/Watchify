@@ -1,0 +1,131 @@
+{
+  "steps": [
+    {
+      "timestamp": 1783694484,
+      "datetime": "2026-07-10 16:41:24",
+      "steps": 5321,
+      "distance_m": 3990,
+      "calories_kcal": 212,
+      "active_duration_s": 2128,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783780884,
+      "datetime": "2026-07-11 16:41:24",
+      "steps": 6065,
+      "distance_m": 4548,
+      "calories_kcal": 242,
+      "active_duration_s": 2426,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783867284,
+      "datetime": "2026-07-12 16:41:24",
+      "steps": 10478,
+      "distance_m": 7858,
+      "calories_kcal": 419,
+      "active_duration_s": 4191,
+      "type": "history"
+    }
+  ],
+  "sleep": [
+    {
+      "timestamp": 1783910484,
+      "datetime": "2026-07-13 04:41:24",
+      "sleep_type": "START",
+      "sleep_type_id": 1
+    },
+    {
+      "timestamp": 1783912284,
+      "datetime": "2026-07-13 05:11:24",
+      "sleep_type": "DEEP",
+      "sleep_type_id": 2
+    },
+    {
+      "timestamp": 1783915896,
+      "datetime": "2026-07-13 06:11:36",
+      "sleep_type": "LIGHT",
+      "sleep_type_id": 3
+    },
+    {
+      "timestamp": 1783920477,
+      "datetime": "2026-07-13 07:27:57",
+      "sleep_type": "DEEP",
+      "sleep_type_id": 2
+    },
+    {
+      "timestamp": 1783925001,
+      "datetime": "2026-07-13 08:43:21",
+      "sleep_type": "LIGHT",
+      "sleep_type_id": 3
+    },
+    {
+      "timestamp": 1783929399,
+      "datetime": "2026-07-13 09:56:39",
+      "sleep_type": "DEEP",
+      "sleep_type_id": 2
+    },
+    {
+      "timestamp": 1783933229,
+      "datetime": "2026-07-13 11:00:29",
+      "sleep_type": "LIGHT",
+      "sleep_type_id": 3
+    },
+    {
+      "timestamp": 1783937236,
+      "datetime": "2026-07-13 12:07:16",
+      "sleep_type": "DEEP",
+      "sleep_type_id": 2
+    },
+    {
+      "timestamp": 1783941844,
+      "datetime": "2026-07-13 13:24:04",
+      "sleep_type": "LIGHT",
+      "sleep_type_id": 3
+    },
+    {
+      "timestamp": 1783944553,
+      "datetime": "2026-07-13 14:09:13",
+      "sleep_type": "WAKE_UP",
+      "sleep_type_id": 4
+    }
+  ],
+  "heart_rate": [
+    {
+      "timestamp": 1783910484,
+      "datetime": "2026-07-13 04:41:24",
+      "heart_rate_bpm": 90,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783917684,
+      "datetime": "2026-07-13 06:41:24",
+      "heart_rate_bpm": 70,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783924884,
+      "datetime": "2026-07-13 08:41:24",
+      "heart_rate_bpm": 91,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783932084,
+      "datetime": "2026-07-13 10:41:24",
+      "heart_rate_bpm": 66,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783939284,
+      "datetime": "2026-07-13 12:41:24",
+      "heart_rate_bpm": 74,
+      "type": "history"
+    },
+    {
+      "timestamp": 1783946484,
+      "datetime": "2026-07-13 14:41:24",
+      "heart_rate_bpm": 86,
+      "type": "history"
+    }
+  ]
+}

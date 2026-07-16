@@ -1,0 +1,24 @@
+====================================================================
+           WEARFIT / UTRAWATCH CLONE BLE COMMAND DICTIONARY
+====================================================================
+All packets framed as: [0xAB] [16-bit Length] [Opcode] [Data] [CRC]
+
+[OUTBOUND COMMAND OPCODES (Pi -> Watch via b002)]
+--------------------------------------------------------------------
+0x01 : System Authentication / Key Exchange Handshake
+       -> Requires Sub-Opcode + Platform Flag + Parameters
+0x02 : Live Sensor Query / Step Count Pull
+0x03 : Health Measurement Trigger (Heart Rate, Blood Pressure)
+0x04 : Find Device Activation (Forces watch motor to vibrate)
+       -> Payload: [0x01] to turn on, [0x00] to turn off
+0x05 : Time & Date Sync Package
+       -> Payload: [Year High] [Year Low] [Month] [Day] [Hour] [Min] [Sec]
+0x0C : Alarm & Device Settings Multi-Sync Configuration
+0x19 : Call/SMS Notification Payload Forwarder
+0x2B : Battery Percentage State Request
+
+[INBOUND RESPONSE TARGET SIGNATURES (Watch -> Pi via b001)]
+--------------------------------------------------------------------
+0x00FF000004... : State Machine Error / Handshake Acknowledgment Missing
+0x00FF0101...   : Authentication Success Binding Key Registered
+====================================================================
