@@ -307,6 +307,25 @@ object WatchProtocol {
         return buildMasterPacket(0, 1, 11, payload) // 11 = DATA_TYPE_FIND_PHONE_OR_DEVICE
     }
 
+    /**
+     * Opcode 0x80 — DATA_TYPE_HEART_AUTO_SWITCH.
+     * Enables/disables 24-hour continuous heart rate monitoring on the watch.
+     * When enabled the watch measures HR autonomously every few minutes and pushes
+     * readings as DATA_TYPE_REAL_HEART_RATE (0x07) without the app requesting them.
+     * Must be sent on every connection — the watch does not persist this across resets.
+     */
+    fun buildHeartAutoSwitchPacket(enabled: Boolean): List<ByteArray> =
+        buildMasterPacket(0, 1, 0x80, byteArrayOf(if (enabled) 0x01 else 0x00))
+
+    /**
+     * Opcode 0x88 — DATA_TYPE_TEMP_SETTING.
+     * Enables automatic body temperature monitoring at the given interval.
+     * Payload: [switch (1=on)] [interval type (0x01 = 5 min, 0x02 = 10 min, 0x03 = 30 min)]
+     * Must be sent on every connection.
+     */
+    fun buildTempMonitoringPacket(enabled: Boolean, intervalType: Int = 0x01): List<ByteArray> =
+        buildMasterPacket(0, 1, 0x88, byteArrayOf(if (enabled) 0x01 else 0x00, (intervalType and 0xFF).toByte()))
+
     fun buildDataSyncRequests(): List<ByteArray> {
         val requests = mutableListOf<ByteArray>()
         // Opcode 3: Battery, Opcode 5: History Sport, Opcode 6: Sleep, Opcode 8: History Heart Rate

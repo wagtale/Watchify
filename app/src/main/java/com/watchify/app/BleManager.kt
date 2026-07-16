@@ -220,7 +220,14 @@ class BleManager(private val context: Context) {
 
                         logCallback("[+] Sync & Pair Finish sent. BLE5=${ble50}, PID=Universal.")
 
-                        // Auto-sync historical health data
+                        // Enable continuous background health monitoring on the watch.
+                        // Without these the watch only measures when the user manually triggers
+                        // a reading on the watch face — no data arrives automatically.
+                        sendChunks(WatchProtocol.buildHeartAutoSwitchPacket(true))   // 0x80: 24h auto HR
+                        sendChunks(WatchProtocol.buildTempMonitoringPacket(true))    // 0x88: auto body temp
+                        logCallback("[+] Auto-monitoring enabled (HR 24h + Temp).")
+
+                        // Request full history dump so graphs are populated immediately
                         logCallback("[>] Requesting historical health data...")
                         sendChunks(WatchProtocol.buildDataSyncRequests())
                     }
