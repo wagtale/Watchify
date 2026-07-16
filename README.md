@@ -2,6 +2,8 @@
 
 Watchify is an open-source Android companion app for Bluetooth Low Energy (BLE) smartwatches. It replaces closed-source proprietary companion apps, offering a privacy-respecting, aesthetically premium, and fully-featured experience for your watch.
 
+> See [CHANGELOG.md](CHANGELOG.md) for a full version history.
+
 ## Features
 
 - **Liquid Glass UI:** A beautiful, visionOS-inspired "frosted glass" interface for the ultimate premium feel.
@@ -84,6 +86,25 @@ Through decompilation and packet analysis, we have mapped the complete `Protocol
 | ✅ | `140` | `WEATHER_PUSH` | Push weather conditions and UI data. |
 | 🚧 | `150` | `MEDICINE` | Pill reminder schedules. |
 | 🚧 | `154` | `AI_TEXT` | Push ChatGPT/AI response strings to UI. |
+
+## Protocol Research
+
+The [`research/`](research/) folder contains the full output of static analysis performed on the OEM companion app APK (`com.wtwd.utra`). The APK was decompiled with JADX and the resulting source was used to map the complete undocumented BLE protocol.
+
+Key documents:
+
+| Document | Contents |
+|----------|----------|
+| [BLE_PROTOCOL.md](research/BLE_PROTOCOL.md) | Full packet framing spec, UUIDs, CRC16, opcode table |
+| [FEATURES.md](research/FEATURES.md) | Complete feature inventory with associated opcodes |
+| [DATA_MODEL.md](research/DATA_MODEL.md) | OEM database schema — all 35 tables and entity definitions |
+| [CONSTANTS.md](research/CONSTANTS.md) | All enums — SportType, NoticeType, WeatherType, etc. |
+| [SECURITY_NOTES.md](research/SECURITY_NOTES.md) | Security observations from the OEM app audit |
+| [opcode_audit.md](research/opcode_audit.md) | Per-opcode audit cross-referenced with Watchify implementation |
+
+See [research/README.md](research/README.md) for the full document index and methodology.
+
+---
 
 ## Architecture
 
