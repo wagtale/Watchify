@@ -27,23 +27,18 @@ android {
         minSdk = 26
         targetSdk = 34
         
-        fun getGitCommitCount(): Int {
-            return try {
-                val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").redirectErrorStream(true).start()
-                val count = process.inputStream.bufferedReader().readText().trim().toInt()
-                
-                val diffProcess = ProcessBuilder("git", "status", "--porcelain").redirectErrorStream(true).start()
-                val hasChanges = diffProcess.inputStream.bufferedReader().readText().trim().isNotEmpty()
-                
-                if (hasChanges) count + 1 else count
-            } catch (e: Exception) {
-                1
-            }
+        val versionFile = project.rootProject.file("version.properties")
+        val versionProps = Properties()
+        if (versionFile.exists()) {
+            versionProps.load(FileInputStream(versionFile))
         }
-        val commitCount = getGitCommitCount()
+        val major = versionProps.getProperty("MAJOR", "1").toInt()
+        val minor = versionProps.getProperty("MINOR", "0").toInt()
+        val patch = versionProps.getProperty("PATCH", "0").toInt()
+        val code = versionProps.getProperty("CODE", "1").toInt()
         
-        versionCode = commitCount
-        versionName = "1.0.$commitCount"
+        versionCode = code
+        versionName = "$major.$minor.$patch"
         
         buildConfigField("String", "WINDY_API_KEY", "\"${envProps.getProperty("WINDY_API_KEY", "")}\"")
     }
