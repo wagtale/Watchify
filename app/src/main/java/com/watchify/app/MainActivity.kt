@@ -26,6 +26,24 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
+    private var hcSwitch: android.widget.Switch? = null
+    
+    private val healthConnectRequest = registerForActivityResult(
+        androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        if (granted.containsAll(HealthDataProcessor.hcManager.permissions)) {
+            HealthDataProcessor.hcManager.isEnabled = true
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                HealthDataProcessor.backfillToHealthConnect()
+            }
+            android.widget.Toast.makeText(this, "Health Connect connected!", android.widget.Toast.LENGTH_SHORT).show()
+        } else {
+            HealthDataProcessor.hcManager.isEnabled = false
+            hcSwitch?.isChecked = false
+            android.widget.Toast.makeText(this, "Permissions denied", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private lateinit var bleManager: BleManager
     private lateinit var logView: TextView
     private lateinit var connectionBadge: TextView
@@ -543,6 +561,52 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             addView(exportBtn)
+            
+            val hcRow = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(0, 32, 0, 16)
+                }
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#15FFFFFF"))
+                    cornerRadius = 32f
+                }
+                setPadding(48, 48, 48, 48)
+
+                val label = TextView(this@MainActivity).apply {
+                    text = "Sync with Health Connect"
+                    setTextColor(Color.WHITE)
+                    textSize = 18f
+                    typeface = ResourcesCompat.getFont(this@MainActivity, R.font.sf_pro_bold)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                val switch = android.widget.Switch(this@MainActivity).apply {
+                    isChecked = HealthDataProcessor.hcManager.isEnabled
+                    setOnCheckedChangeListener { _, isChecked ->
+                        if (isChecked) {
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                if (HealthDataProcessor.hcManager.client == null) {
+                                    android.widget.Toast.makeText(this@MainActivity, "Health Connect not installed", android.widget.Toast.LENGTH_SHORT).show()
+                                    this@apply.isChecked = false
+                                } else if (!HealthDataProcessor.hcManager.hasAllPermissions()) {
+                                    healthConnectRequest.launch(HealthDataProcessor.hcManager.permissions)
+                                } else {
+                                    HealthDataProcessor.hcManager.isEnabled = true
+                                }
+                            }
+                        } else {
+                            HealthDataProcessor.hcManager.isEnabled = false
+                        }
+                    }
+                }
+                hcSwitch = switch
+
+                addView(label)
+                addView(switch)
+            }
+            addView(hcRow)
             
             val footnote = TextView(this@MainActivity).apply {
                 text = "* Estimated from step count"

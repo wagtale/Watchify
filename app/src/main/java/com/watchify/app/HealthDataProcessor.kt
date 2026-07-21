@@ -62,9 +62,11 @@ object HealthDataProcessor {
     val updates = _updates.asSharedFlow()
 
     private var dbHelper: HealthDatabaseHelper? = null
+    lateinit var hcManager: HealthConnectManager
 
     fun init(context: Context) {
         if (dbHelper == null) {
+            hcManager = HealthConnectManager(context.applicationContext)
             dbHelper = HealthDatabaseHelper(context.applicationContext)
             
             // Start the background consumer
@@ -112,6 +114,10 @@ object HealthDataProcessor {
             put("value2", record.value2)
         }
         db.insert("records", null, values)
+        
+        if (hcManager.isEnabled) {
+            hcManager.syncRecord(record)
+        }
         
         // Notify subscribers (MainActivity UI)
         _updates.emit(record.type)
@@ -163,5 +169,25 @@ object HealthDataProcessor {
             e.printStackTrace()
             return null
         }
+    }
+
+    suspend fun backfillToHealthConnect() {
+        val db = dbHelper?.readableDatabase ?: return
+        val cursor = db.rawQuery("SELECT type, timestamp, value1, value2 FROM records ORDER BY timestamp ASC", null)
+        val allRecords = mutableListOf<HealthRecord>()
+        if (cursor.moveToFirst()) {
+            do {
+                try {
+                    allRecords.add(HealthRecord(
+                        HealthType.valueOf(cursor.getString(0)),
+                        cursor.getLong(1),
+                        cursor.getFloat(2),
+                        cursor.getFloat(3)
+                    ))
+                } catch (e: Exception) {}
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        hcManager.writeBatch(allRecords)
     }
 }
