@@ -190,4 +190,19 @@ object HealthDataProcessor {
         cursor.close()
         hcManager.writeBatch(allRecords)
     }
+
+    suspend fun importFromHealthConnect() {
+        val imported = hcManager.importLast30Days()
+        val db = dbHelper?.writableDatabase ?: return
+        
+        imported.forEach { record ->
+            val values = ContentValues().apply {
+                put("type", record.type.name)
+                put("timestamp", record.timestamp)
+                put("value1", record.value1)
+                put("value2", record.value2)
+            }
+            db.insert("records", null, values)
+        }
+    }
 }

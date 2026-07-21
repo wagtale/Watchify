@@ -5,8 +5,11 @@ import android.content.SharedPreferences
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 class HealthConnectManager(private val context: Context) {
     val client: HealthConnectClient? by lazy {
@@ -31,7 +34,15 @@ class HealthConnectManager(private val context: Context) {
         HealthPermission.getWritePermission(BloodPressureRecord::class),
         HealthPermission.getWritePermission(BodyTemperatureRecord::class),
         HealthPermission.getWritePermission(BloodGlucoseRecord::class),
-        HealthPermission.getWritePermission(ExerciseSessionRecord::class)
+        HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
+        HealthPermission.getReadPermission(HeartRateRecord::class),
+        HealthPermission.getReadPermission(SleepSessionRecord::class),
+        HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+        HealthPermission.getReadPermission(BloodPressureRecord::class),
+        HealthPermission.getReadPermission(BodyTemperatureRecord::class),
+        HealthPermission.getReadPermission(BloodGlucoseRecord::class),
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class)
     )
 
     suspend fun hasAllPermissions(): Boolean {
@@ -109,5 +120,39 @@ class HealthConnectManager(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    suspend fun importLast30Days(): List<HealthRecord> {
+        if (client == null || !hasAllPermissions()) return emptyList()
+        val endTime = Instant.now()
+        val startTime = endTime.minus(30, ChronoUnit.DAYS)
+        val timeRange = TimeRangeFilter.between(startTime, endTime)
+        
+        val results = mutableListOf<HealthRecord>()
+        try {
+            client!!.readRecords(ReadRecordsRequest(StepsRecord::class, timeRange)).records.forEach {
+                results.add(HealthRecord(HealthType.STEPS, it.startTime.epochSecond, it.count.toFloat()))
+            }
+            client!!.readRecords(ReadRecordsRequest(HeartRateRecord::class, timeRange)).records.forEach { hr ->
+                hr.samples.forEach {
+                    results.add(HealthRecord(HealthType.HEART_RATE, it.time.epochSecond, it.beatsPerMinute.toFloat()))
+                }
+            }
+            client!!.readRecords(ReadRecordsRequest(OxygenSaturationRecord::class, timeRange)).records.forEach {
+                results.add(HealthRecord(HealthType.SPO2, it.time.epochSecond, it.percentage.value.toFloat()))
+            }
+            client!!.readRecords(ReadRecordsRequest(BloodPressureRecord::class, timeRange)).records.forEach {
+                results.add(HealthRecord(HealthType.BP, it.time.epochSecond, it.systolic.inMillimetersOfMercury.toFloat(), it.diastolic.inMillimetersOfMercury.toFloat()))
+            }
+            client!!.readRecords(ReadRecordsRequest(BodyTemperatureRecord::class, timeRange)).records.forEach {
+                results.add(HealthRecord(HealthType.TEMP, it.time.epochSecond, it.temperature.inCelsius.toFloat()))
+            }
+            client!!.readRecords(ReadRecordsRequest(BloodGlucoseRecord::class, timeRange)).records.forEach {
+                results.add(HealthRecord(HealthType.BG, it.time.epochSecond, it.level.inMillimolesPerLiter.toFloat()))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return results
     }
 }

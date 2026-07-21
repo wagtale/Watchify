@@ -608,6 +608,26 @@ class MainActivity : AppCompatActivity() {
             }
             addView(hcRow)
             
+            val importBtn = createButton("Import Health Connect (30 Days)", "#1AFFFFFF", "#34C759", R.drawable.ic_cloud_sun) {
+                if (HealthDataProcessor.hcManager.client == null) {
+                    android.widget.Toast.makeText(this@MainActivity, "Health Connect not installed", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        if (!HealthDataProcessor.hcManager.hasAllPermissions()) {
+                            healthConnectRequest.launch(HealthDataProcessor.hcManager.permissions)
+                        } else {
+                            android.widget.Toast.makeText(this@MainActivity, "Importing data...", android.widget.Toast.LENGTH_SHORT).show()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                HealthDataProcessor.importFromHealthConnect()
+                            }
+                            android.widget.Toast.makeText(this@MainActivity, "Import complete!", android.widget.Toast.LENGTH_SHORT).show()
+                            updateHealthGraph()
+                        }
+                    }
+                }
+            }
+            addView(importBtn)
+            
             val footnote = TextView(this@MainActivity).apply {
                 text = "* Estimated from step count"
                 textSize = 12f
